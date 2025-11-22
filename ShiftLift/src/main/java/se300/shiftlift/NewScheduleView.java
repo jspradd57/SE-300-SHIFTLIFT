@@ -6,9 +6,11 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
@@ -70,6 +72,8 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
             RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
             RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
             
+            Button downloadPdfButton = createDownloadPdfButton();
+            
             // Apply styling to each link
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
@@ -78,16 +82,19 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
             styleRouterLink(changePasswordLink);
             styleRouterLink(mainMenuLink);
             
-            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, changePasswordLink);
+            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, downloadPdfButton, changePasswordLink);
         }
         else{
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
             RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
             RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            
+            Button downloadPdfButton = createDownloadPdfButton();
+            
             styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             styleRouterLink(mainMenuLink);
-            drawerLayout.add(mainMenuLink, newShiftLink, changePasswordLink);
+            drawerLayout.add(mainMenuLink, newShiftLink, downloadPdfButton, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
@@ -280,5 +287,74 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
         endDatePicker.setMin(startLocal.plusDays(1));
 
         return true;
+    }
+    
+    private Button createDownloadPdfButton() {
+        Button downloadButton = new Button("Download PDF");
+        downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+        downloadButton.getStyle()
+            .set("color", "#156fabff")
+            .set("font-family", "Poppins, sans-serif")
+            .set("padding", "8px 0")
+            .set("font-size", "16px")
+            .set("text-align", "left")
+            .set("justify-content", "flex-start");
+        
+        downloadButton.addClickListener(e -> {
+            try {
+                // Find the latest published schedule
+                java.util.List<Schedule> allSchedules = scheduleService.getAllSchedules();
+                java.util.Optional<Schedule> latestPublished = allSchedules.stream()
+                    .filter(s -> s.getApproved() != null && s.getApproved())
+                    .max(java.util.Comparator.comparing(Schedule::getId));
+                
+                if (latestPublished.isEmpty()) {
+                    Notification.show("No published schedule available to download", 
+                        3000, Notification.Position.MIDDLE)
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    return;
+                }
+                
+                Schedule schedule = latestPublished.get();
+                scheduleService.loadShiftsForSchedule(schedule);
+                
+                // Generate PDF to temporary file
+                String tempDir = System.getProperty("java.io.tmpdir");
+                String pdfPath = tempDir + "/schedule-" + schedule.getId() + ".pdf";
+                SchedulePdfGenerator.generateSchedulePdf(schedule, pdfPath);
+                
+                // Trigger download
+                java.io.File pdfFile = new java.io.File(pdfPath);
+                com.vaadin.flow.server.StreamResource resource = 
+                    new com.vaadin.flow.server.StreamResource("schedule.pdf", 
+                        () -> {
+                            try {
+                                return new java.io.FileInputStream(pdfFile);
+                            } catch (java.io.FileNotFoundException ex) {
+                                return null;
+                            }
+                        });
+                
+                com.vaadin.flow.component.html.Anchor downloadLink = 
+                    new com.vaadin.flow.component.html.Anchor(resource, "");
+                downloadLink.getElement().setAttribute("download", true);
+                downloadLink.setId("pdf-download-" + System.currentTimeMillis());
+                
+                getElement().appendChild(downloadLink.getElement());
+                com.vaadin.flow.component.UI.getCurrent().getPage().executeJs(
+                    "document.getElementById($0).click()", downloadLink.getId().get()
+                );
+                
+                Notification.show("PDF download started", 2000, Notification.Position.BOTTOM_START)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                    
+            } catch (Exception ex) {
+                Notification.show("Error generating PDF: " + ex.getMessage(), 
+                    5000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+        });
+        
+        return downloadButton;
     }
 }
