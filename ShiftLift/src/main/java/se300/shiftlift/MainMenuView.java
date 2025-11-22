@@ -44,6 +44,7 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     
     private final WorkstationService workstationService;
     private int workstationCount = 5; // Default fallback
+    private java.util.Map<Long, Integer> workstationColorMap = new java.util.HashMap<>();
     
     public MainMenuView(ScheduleService scheduleService, ShiftService shiftService, WorkstationService workstationService) {
         this.scheduleService = scheduleService;
@@ -55,6 +56,13 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
         try {
             long count = workstationService.count();
             this.workstationCount = Math.max(1, (int) count); // Ensure at least 1
+            
+            // Build color map for workstations - get all workstations using unpaged query
+            org.springframework.data.domain.Pageable unpaged = org.springframework.data.domain.Pageable.unpaged();
+            List<Workstation> allWorkstations = workstationService.list(unpaged);
+            for (int i = 0; i < allWorkstations.size(); i++) {
+                workstationColorMap.put(allWorkstations.get(i).getId(), i);
+            }
         } catch (Exception e) {
             this.workstationCount = 5; // Fallback to 5 if error
         }
@@ -676,7 +684,8 @@ private int getWorkstationColorIndex(Long workstationId) {
     if (workstationId == null) {
         return 0;
     }
-    return (int) (workstationId % workstationCount);
+    // Use the color map to get consistent color index for each workstation
+    return workstationColorMap.getOrDefault(workstationId, 0);
 }
 
 private String formatDate(Date date) {
