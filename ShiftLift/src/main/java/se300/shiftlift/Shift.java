@@ -3,6 +3,7 @@ package se300.shiftlift;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -23,14 +24,16 @@ public class Shift {
     private Date assigned_date;
     
     @ManyToOne
-    @JoinColumn(name = "worker_id")
+    @JoinColumn(name = "worker_id", nullable = true, 
+                foreignKey = @ForeignKey(name = "fk_shift_worker"))
     private User assigned_Worker;
     
     @Embedded
     private Time assigned_time;
     
     @ManyToOne
-    @JoinColumn(name = "workstation_id")
+    @JoinColumn(name = "workstation_id", nullable = true,
+                foreignKey = @ForeignKey(name = "fk_shift_workstation"))
     private Workstation assigned_workstation;
 
     // Default constructor required by JPA

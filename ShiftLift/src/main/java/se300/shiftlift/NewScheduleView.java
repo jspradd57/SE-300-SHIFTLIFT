@@ -221,6 +221,13 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
 
     private void saveButtonClickListener() {
         if (validateFields()) {
+            // Check if an unpublished schedule already exists
+            if (scheduleService.hasUnpublishedSchedule()) {
+                Notification.show("An unpublished schedule already exists. Please publish or delete it before creating a new one.",
+                    4000, Notification.Position.MIDDLE);
+                return;
+            }
+
             try {
                 // Convert LocalDate to custom Date objects
                 LocalDate startLocal = startDatePicker.getValue();

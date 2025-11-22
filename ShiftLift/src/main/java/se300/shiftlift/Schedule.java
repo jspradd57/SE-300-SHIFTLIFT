@@ -10,11 +10,9 @@ import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -47,8 +45,8 @@ public class Schedule {
     @Column(name = "is_approved")
     private Boolean is_approved;
     
-    @OneToMany(fetch = FetchType.EAGER)
-    private List<Shift> shifts;
+    // Non-persistent field to hold shifts loaded from database
+    private transient List<Shift> shifts;
     
     // Non-persistent field to hold week subdivisions
     private transient List<Week> weeks;
