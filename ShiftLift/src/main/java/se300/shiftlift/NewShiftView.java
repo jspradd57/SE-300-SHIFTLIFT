@@ -14,7 +14,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
@@ -37,7 +37,7 @@ public class NewShiftView extends AppLayout implements BeforeEnterObserver, Befo
 
     //Add Attribute Components
     private VerticalLayout mainContainer = new VerticalLayout();
-    private H1 title = new H1("Create New Shift");
+
     private Button logoutButton = new Button("Logout");
     private Button addShiftButton = new Button("Add Shift");
     private Button cancelButton = new Button("Cancel");
@@ -129,8 +129,16 @@ public class NewShiftView extends AppLayout implements BeforeEnterObserver, Befo
             .set("margin-right", "20px");
         logoutButton.addClickListener(e -> Auth.logoutToLogin());
 
+        // Title for navbar
+        H2 navTitle = new H2("Create New Shift");
+        navTitle.getStyle()
+               .set("color", "#156fabff")
+               .set("font-family", "Poppins, sans-serif")
+               .set("margin", "0")
+               .set("font-size", "24px");
+
         // Navbar layout (this is the header)
-        var header = new HorizontalLayout(toggle, logoutButton);
+        var header = new HorizontalLayout(toggle, navTitle, logoutButton);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(Alignment.CENTER);
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
@@ -147,16 +155,7 @@ public class NewShiftView extends AppLayout implements BeforeEnterObserver, Befo
         contentLayout.getStyle().set("flex-grow", "1");
         contentLayout.setAlignItems(Alignment.CENTER); // Center all content horizontally
 
-        //Title
-        title.getStyle()
-            .set("color", "#156fabff")
-            .set("font-family", "Poppins, sans-serif")  //font
-            .set("font-size", "50px")       //size
-            .set("text-align", "center")    //center the text
-            .set("margin-top", "30px")
-            .set("margin-bottom", "30px");
-        contentLayout.add(title);
-        contentLayout.setHorizontalComponentAlignment(Alignment.CENTER, title); // Center the title component
+
         
         //Main Container Setup - limit to 1/3 of screen width and center
         mainContainer.setMaxWidth("33.33vw"); // Max 1/3 of screen width
@@ -319,7 +318,18 @@ public class NewShiftView extends AppLayout implements BeforeEnterObserver, Befo
             event.rerouteTo("");
             return;
         }
-    
+        
+        // Check for date parameter and pre-load the date picker
+        java.util.Map<String, java.util.List<String>> params = event.getLocation().getQueryParameters().getParameters();
+        if (params.containsKey("date") && !params.get("date").isEmpty()) {
+            try {
+                String dateParam = params.get("date").get(0);
+                java.time.LocalDate selectedDate = java.time.LocalDate.parse(dateParam);
+                shiftDatePicker.setValue(selectedDate);
+            } catch (Exception e) {
+                // If parsing fails, just continue without pre-loading
+            }
+        }
     }
 
     @Override

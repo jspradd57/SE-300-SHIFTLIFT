@@ -7,7 +7,7 @@ import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
@@ -29,7 +29,7 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
 
     // UI Components
     private VerticalLayout mainContainer = new VerticalLayout();
-    private H1 title = new H1("Create New Schedule");
+
     private Button createScheduleButton = new Button("Create Schedule");
     private Button cancelButton = new Button("Cancel");
     private DatePicker startDatePicker = new DatePicker("Start Date");
@@ -110,8 +110,16 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
             .set("margin-right", "20px");
         logoutButton.addClickListener(e -> Auth.logoutToLogin());
 
+        // Title for navbar
+        H2 navTitle = new H2("Create New Schedule");
+        navTitle.getStyle()
+               .set("color", "#156fabff")
+               .set("font-family", "Poppins, sans-serif")
+               .set("margin", "0")
+               .set("font-size", "24px");
+
         // Navbar layout (this is the header)
-        var header = new HorizontalLayout(toggle, logoutButton);
+        var header = new HorizontalLayout(toggle, navTitle, logoutButton);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
@@ -128,16 +136,7 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
         contentLayout.getStyle().set("flex-grow", "1");
         contentLayout.setAlignItems(Alignment.CENTER);
 
-        // Title
-        title.getStyle()
-            .set("color", "#156fabff")
-            .set("font-family", "Poppins, sans-serif")
-            .set("font-size", "50px")
-            .set("text-align", "center")
-            .set("margin-top", "30px")
-            .set("margin-bottom", "30px");
-        contentLayout.add(title);
-        contentLayout.setHorizontalComponentAlignment(Alignment.CENTER, title);
+
 
         // Main Container Setup
         mainContainer.setMaxWidth("33.33vw");

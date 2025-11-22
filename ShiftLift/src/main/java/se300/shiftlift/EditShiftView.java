@@ -13,7 +13,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
@@ -35,7 +35,7 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
 
     //Add Attribute Components
     private VerticalLayout mainContainer = new VerticalLayout();
-    private H1 title = new H1("Edit Shift");
+
     private Button logoutButton = new Button("Logout");
     private Button addShiftButton = new Button("Add Shift");
     private Button cancelButton = new Button("Cancel");
@@ -78,30 +78,32 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
         getContent().getStyle().set("flex-grow", "1");
         getContent().setAlignItems(Alignment.CENTER); // Center all content horizontally
 
+        // Title for topBar
+        H2 topTitle = new H2("Edit Shift");
+        topTitle.getStyle()
+               .set("color", "#156fabff")
+               .set("font-family", "Poppins, sans-serif")
+               .set("margin", "0")
+               .set("font-size", "24px");
+
         //Logout Button
         logoutButton.getStyle()
             .set("color", "#666666")
             .set("font-faminly", "Poppins, sans-serif");
         logoutButton.addClickListener(e -> Auth.logoutToLogin());
-        HorizontalLayout topBar = new HorizontalLayout(logoutButton);
+        HorizontalLayout topBar = new HorizontalLayout(topTitle, logoutButton);
         topBar.setWidthFull();
         topBar.setAlignItems(Alignment.CENTER);
-        topBar.setJustifyContentMode(JustifyContentMode.END);
-        topBar.setPadding(false);
-        topBar.setSpacing(false);
-        topBar.getStyle().set("margin", "0");
+        topBar.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        topBar.setPadding(true);
+        topBar.setSpacing(true);
+        topBar.getStyle()
+            .set("margin", "0")
+            .set("background-color", "white")
+            .set("padding", "16px 20px");
         getContent().add(topBar);
 
-        //Title
-        title.getStyle()
-            .set("color", "#156fabff")
-            .set("font-family", "Poppins, sans-serif")  //font
-            .set("font-size", "50px")       //size
-            .set("text-align", "center")    //center the text
-            .set("margin-top", "30px")
-            .set("margin-bottom", "30px");
-        getContent().add(title);
-        getContent().setHorizontalComponentAlignment(Alignment.CENTER, title); // Center the title component
+
         
         //Main Container Setup - limit to 1/3 of screen width and center
         mainContainer.setMaxWidth("33.33vw"); // Max 1/3 of screen width
@@ -263,7 +265,7 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
             shiftService.deleteShift(currentShift);
             dirty = false;
             Notification.show("Shift deleted successfully!", 3000, Notification.Position.BOTTOM_START);
-            UI.getCurrent().navigate("manage-schedule");
+            UI.getCurrent().navigate("main-menu");
         } catch (Exception e) {
             Notification.show("Error deleting shift: " + e.getMessage(), 4000, Notification.Position.MIDDLE);
         }
@@ -309,7 +311,6 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
         
         // Update button text
         addShiftButton.setText("Save Changes");
-        title.setText("Edit Shift");
     }
 
     @Override
@@ -446,7 +447,7 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
                                             dirty = false;
                                             Notification.show("Shift updated successfully! Previous worker reassigned.", 
                                                 3000, Notification.Position.BOTTOM_START);
-                                            UI.getCurrent().navigate("manage-schedule");
+                                            UI.getCurrent().navigate("main-menu");
                                         }
                                     } catch (Exception ex) {
                                         Notification.show("Error during override: " + ex.getMessage(), 
@@ -497,7 +498,7 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
                     Notification.show("Shift created successfully!", 3000, Notification.Position.BOTTOM_START);
                 }
                 
-                UI.getCurrent().navigate("manage-schedule");
+                UI.getCurrent().navigate("main-menu");
                 
             } catch (Exception e) {
                 Notification.show("Error saving shift: " + e.getMessage(), 
@@ -509,7 +510,7 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
     private void cancel_button_click_listener()
     {
         dirty = false;
-        UI.getCurrent().navigate("manage-schedule");
+        UI.getCurrent().navigate("main-menu");
     }
 
 

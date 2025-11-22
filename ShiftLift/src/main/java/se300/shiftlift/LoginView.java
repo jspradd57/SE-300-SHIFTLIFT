@@ -90,7 +90,7 @@ public class LoginView extends VerticalLayout {
         });
 
         // Remove insecure change-password-from-login behavior.
-        changePassword.setText("Change Password");
+        changePassword.setText("Forgot Password");
         changePassword.addClickListener(e -> {
             if (!Auth.isLoggedIn()) {
                 Notification.show("Please log in to change your password")

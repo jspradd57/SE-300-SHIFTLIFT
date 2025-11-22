@@ -11,7 +11,7 @@ import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -114,15 +114,19 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
         header.getStyle()
             .set("background-color", "white")
             .set("padding", "16px 20px");
+        
+        // Add title to navbar
+        H2 navTitle = new H2("Workstations");
+        navTitle.getStyle()
+               .set("color", "#156fabff")
+               .set("font-family", "Poppins, sans-serif")
+               .set("margin", "0")
+               .set("font-size", "24px");
+        
+        // Update header to include title
+        header.removeAll();
+        header.add(toggle, navTitle, logoutButton);
         addToNavbar(header);
-
-        //Create Tittle and match styling
-        H1 title = new H1("Workstations");
-        title.getStyle()
-            .set("color", "#156fabff")
-            .set("font-family", "Poppins, sans-serif")
-            .set("font-size", "48px")
-            .set("margin-bottom", "24px");
         
         //Search field
         searchField.setPlaceholder("Search workstations...");
@@ -235,8 +239,8 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
             }
         });
 
-        //Create man content container
-        VerticalLayout contentLayout = new VerticalLayout(title, searchLayout, listLayout, bottomLayout);
+        //Create main content container
+        VerticalLayout contentLayout = new VerticalLayout(searchLayout, listLayout, bottomLayout);
         contentLayout.setSizeFull();
         contentLayout.setSpacing(true);
         contentLayout.setPadding(true);

@@ -4,7 +4,7 @@ import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -81,8 +81,16 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
             .set("margin-right", "20px");
         logoutBtn.addClickListener(e -> Auth.logoutToLogin());
 
+        // Title for navbar
+        H2 navTitle = new H2("Change Password");
+        navTitle.getStyle()
+               .set("color", "#156fabff")
+               .set("font-family", "Poppins, sans-serif")
+               .set("margin", "0")
+               .set("font-size", "24px");
+
         // Navbar layout (this is the header)
-        var header = new HorizontalLayout(toggle, logoutBtn);
+        var header = new HorizontalLayout(toggle, navTitle, logoutBtn);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
@@ -100,11 +108,7 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
         contentLayout.setSpacing(true);
         contentLayout.setDefaultHorizontalComponentAlignment(FlexComponent.Alignment.CENTER);
 
-        H1 title = new H1("Change Password");
-        title.getStyle()
-            .set("color", "#156fabff")
-            .set("font-family", "Poppins, sans-serif")
-            .set("margin", "0 0 24px 0");
+
 
         PasswordField currentPassword = new PasswordField("Current Password");
         currentPassword.setWidth("300px");
@@ -127,7 +131,7 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
         form.setSpacing(true);
         form.setDefaultHorizontalComponentAlignment(FlexComponent.Alignment.CENTER);
 
-        contentLayout.add(title, form);
+        contentLayout.add(form);
         
         // Set content for AppLayout
         setContent(contentLayout);
