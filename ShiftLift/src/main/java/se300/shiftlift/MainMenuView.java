@@ -171,9 +171,12 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
         calendarHeader.setJustifyContentMode(JustifyContentMode.START);
 
         scheduleGrid = createScheduleGrid();
+        
+        // Create color key/legend for workstations
+        Component colorKey = createColorKey();
 
         // Place headers into the AppLayout content area
-        VerticalLayout content = new VerticalLayout(weekHeader, calendarHeader, scheduleGrid);
+        VerticalLayout content = new VerticalLayout(weekHeader, calendarHeader, scheduleGrid, colorKey);
         content.setWidthFull();
         content.setAlignItems(Alignment.CENTER);
         // top 10px, right 60px, bottom 0px, left 60px
@@ -265,6 +268,73 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     }
 
     return grid;
+}
+
+private Component createColorKey() {
+    VerticalLayout keyContainer = new VerticalLayout();
+    keyContainer.setPadding(false);
+    keyContainer.setSpacing(false);
+    keyContainer.getStyle()
+        .set("margin-top", "20px")
+        .set("padding", "16px")
+        .set("border", "1px solid #e0e0e0")
+        .set("border-radius", "8px")
+        .set("background-color", "#fafafa")
+        .set("max-width", "600px");
+    
+    H4 keyTitle = new H4("Workstation Color Key");
+    keyTitle.getStyle()
+        .set("margin", "0 0 12px 0")
+        .set("color", "#156fabff")
+        .set("font-family", "Poppins, sans-serif");
+    
+    HorizontalLayout keyItems = new HorizontalLayout();
+    keyItems.setSpacing(true);
+    keyItems.setWidthFull();
+    keyItems.getStyle().set("flex-wrap", "wrap");
+    
+    try {
+        org.springframework.data.domain.Pageable unpaged = org.springframework.data.domain.Pageable.unpaged();
+        List<Workstation> allWorkstations = workstationService.list(unpaged);
+        
+        for (Workstation workstation : allWorkstations) {
+            int colorIndex = workstationColorMap.getOrDefault(workstation.getId(), 0);
+            String color = getWorkstationColor(colorIndex);
+            
+            HorizontalLayout keyItem = new HorizontalLayout();
+            keyItem.setSpacing(false);
+            keyItem.setAlignItems(Alignment.CENTER);
+            keyItem.getStyle()
+                .set("margin-right", "16px")
+                .set("margin-bottom", "8px");
+            
+            Div colorBox = new Div();
+            colorBox.getStyle()
+                .set("width", "20px")
+                .set("height", "20px")
+                .set("background-color", color)
+                .set("border-radius", "4px")
+                .set("margin-right", "8px")
+                .set("border", "1px solid rgba(0,0,0,0.1)");
+            
+            Span workstationName = new Span(workstation.getName());
+            workstationName.getStyle()
+                .set("font-size", "14px")
+                .set("color", "#333")
+                .set("font-family", "Poppins, sans-serif");
+            
+            keyItem.add(colorBox, workstationName);
+            keyItems.add(keyItem);
+        }
+    } catch (Exception e) {
+        // If error, show a simple message
+        Span errorMsg = new Span("Unable to load workstation colors");
+        errorMsg.getStyle().set("color", "#999");
+        keyItems.add(errorMsg);
+    }
+    
+    keyContainer.add(keyTitle, keyItems);
+    return keyContainer;
 }
 
 
