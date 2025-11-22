@@ -16,6 +16,8 @@ import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -313,12 +315,27 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     
     // Add click listener to navigate to EditShiftView
     if (shift != null && shift.getId() != null) {
-        block.getElement().addEventListener("click", e -> {
-            navigateToEditShift(shift.getId());
-        });
-        
-        // Add tooltip
-        block.getElement().setAttribute("title", "Click to edit this shift");
+        // Only add click listener if user has permission to edit
+        if(shift.getStudentWorker() != null && 
+           (shift.getStudentWorker().getId().equals(Auth.getCurrentUser().getId()) || Auth.isAdmin())) {
+            block.getElement().addEventListener("click", e -> {
+                navigateToEditShift(shift.getId());
+            }).addEventData("event.stopPropagation()");
+            
+            // Add tooltip
+            block.getElement().setAttribute("title", "Click to edit this shift");
+        } else {
+            // Prevent click from bubbling to dayCol for non-editable shifts
+            block.getElement().addEventListener("click", e -> {
+                Notification notification = Notification.show("You do not have permission to edit this shift");
+                notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+                notification.setDuration(3000);
+                notification.setPosition(Notification.Position.TOP_CENTER);
+            }).addEventData("event.stopPropagation()");
+            // Different cursor and tooltip for non-editable shifts
+            block.getStyle().set("cursor", "default");
+            block.getElement().setAttribute("title", "You cannot edit this shift");
+        }
     }
     
     // Add worker initials as text content
