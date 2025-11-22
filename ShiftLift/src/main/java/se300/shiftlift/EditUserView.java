@@ -12,6 +12,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
@@ -59,10 +60,12 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
 
     private User user;
     private final UserService userService;
+    private final ScheduleService scheduleService;
     private boolean dirty = false;
     
-    public EditUserView(UserService userService) {
+    public EditUserView(UserService userService, ScheduleService scheduleService) {
         this.userService = userService;
+        this.scheduleService = scheduleService;
         create_elements();
         // fields are created; if opened directly with a username query param, beforeEnter will load
         // track changes to detect unsaved edits
@@ -189,6 +192,8 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
             RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
             RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
             
+            Button downloadPdfButton = createDownloadPdfButton();
+            
             // Apply styling to each link
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
@@ -197,16 +202,19 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
             styleRouterLink(changePasswordLink);
             styleRouterLink(mainMenuLink);
             
-            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, changePasswordLink);
+            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, downloadPdfButton, changePasswordLink);
         }
         else{
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
             RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
             RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
+            
+            Button downloadPdfButton = createDownloadPdfButton();
+            
             styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             styleRouterLink(mainMenuLink);
-            drawerLayout.add(mainMenuLink, newShiftLink, changePasswordLink);
+            drawerLayout.add(mainMenuLink, newShiftLink, downloadPdfButton, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
@@ -484,5 +492,74 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         confirm.add(dialogLayout);
         confirm.open();
         confirm.open();
+    }
+
+    private Button createDownloadPdfButton() {
+        Button downloadButton = new Button("Download PDF");
+        downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+        downloadButton.getStyle()
+            .set("color", "#156fabff")
+            .set("font-family", "Poppins, sans-serif")
+            .set("padding", "8px 0")
+            .set("font-size", "16px")
+            .set("text-align", "left")
+            .set("justify-content", "flex-start");
+        
+        downloadButton.addClickListener(e -> {
+            try {
+                // Find the latest published schedule
+                List<Schedule> allSchedules = scheduleService.getAllSchedules();
+                java.util.Optional<Schedule> latestPublished = allSchedules.stream()
+                    .filter(s -> s.getApproved() != null && s.getApproved())
+                    .max(java.util.Comparator.comparing(Schedule::getId));
+                
+                if (latestPublished.isEmpty()) {
+                    Notification.show("No published schedule available to download", 
+                        3000, Notification.Position.MIDDLE)
+                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    return;
+                }
+                
+                Schedule schedule = latestPublished.get();
+                scheduleService.loadShiftsForSchedule(schedule);
+                
+                // Generate PDF to temporary file
+                String tempDir = System.getProperty("java.io.tmpdir");
+                String pdfPath = tempDir + "/schedule-" + schedule.getId() + ".pdf";
+                SchedulePdfGenerator.generateSchedulePdf(schedule, pdfPath);
+                
+                // Trigger download
+                java.io.File pdfFile = new java.io.File(pdfPath);
+                com.vaadin.flow.server.StreamResource resource = 
+                    new com.vaadin.flow.server.StreamResource("schedule.pdf", 
+                        () -> {
+                            try {
+                                return new java.io.FileInputStream(pdfFile);
+                            } catch (java.io.FileNotFoundException ex) {
+                                return null;
+                            }
+                        });
+                
+                com.vaadin.flow.component.html.Anchor downloadLink = 
+                    new com.vaadin.flow.component.html.Anchor(resource, "");
+                downloadLink.getElement().setAttribute("download", true);
+                downloadLink.setId("pdf-download-" + System.currentTimeMillis());
+                
+                getElement().appendChild(downloadLink.getElement());
+                com.vaadin.flow.component.UI.getCurrent().getPage().executeJs(
+                    "document.getElementById($0).click()", downloadLink.getId().get()
+                );
+                
+                Notification.show("PDF download started", 2000, Notification.Position.BOTTOM_START)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                    
+            } catch (Exception ex) {
+                Notification.show("Error generating PDF: " + ex.getMessage(), 
+                    5000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+        });
+        
+        return downloadButton;
     }
 }
