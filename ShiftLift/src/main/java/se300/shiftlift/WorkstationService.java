@@ -7,11 +7,17 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 @Service
 public class WorkstationService {
     
     private final WorkstationRepository workstationRepository;
     private final ShiftService shiftService;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
     
     public WorkstationService(WorkstationRepository workstationRepository, ShiftService shiftService) {
         this.workstationRepository = workstationRepository;
@@ -67,21 +73,24 @@ public class WorkstationService {
     //Deletes a workstation from the database
     @Transactional
     public int delete(Workstation workstation) {
-        if (workstation == null) return 0;
+        if (workstation == null || workstation.getId() == null) return 0;
         
-        // First, delete all shifts associated with this workstation
-        List<Shift> workstationShifts = shiftService.getAllShifts().stream()
-            .filter(shift -> shift.getWorkstation() != null && shift.getWorkstation().equals(workstation))
-            .toList();
+        // Count shifts before deleting
+        List<Shift> allShifts = shiftService.getAllShifts();
+        int deletedShiftsCount = (int) allShifts.stream()
+            .filter(shift -> shift.getWorkstation() != null && 
+                           shift.getWorkstation().getId() != null && 
+                           shift.getWorkstation().getId().equals(workstation.getId()))
+            .count();
         
-        int deletedShiftsCount = workstationShifts.size();
-        for (Shift shift : workstationShifts) {
-            shiftService.deleteShift(shift);
-        }
+        // Clear the persistence context first to avoid any cached entities
+        entityManager.clear();
         
-        // Then delete the workstation
-        workstationRepository.delete(workstation);
-        workstationRepository.flush();
+        // Use the batch delete query to delete all shifts for this workstation
+        shiftService.deleteShiftsByWorkstationId(workstation.getId());
+        
+        // Delete the workstation
+        workstationRepository.deleteById(workstation.getId());
         
         return deletedShiftsCount;
     }

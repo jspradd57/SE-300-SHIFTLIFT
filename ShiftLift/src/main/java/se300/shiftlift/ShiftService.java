@@ -49,14 +49,38 @@ public class ShiftService
 
     @Transactional
     public void deleteShift(Shift shift) {
-        try {
-            if (shift != null) {
-                shiftRepositry.delete(shift);
-                shiftRepositry.flush();
-            }
-        } catch (Exception e) {
-            System.out.println("Error deleting shift: " + e.getMessage());
+        if (shift != null && shift.getId() != null) {
+            // First, clean up the schedules_shifts join table
+            shiftRepositry.deleteScheduleShiftsJoinTableByShiftId(shift.getId());
+            shiftRepositry.flush();
+            // Then delete the shift
+            shiftRepositry.delete(shift);
+            shiftRepositry.flush();
         }
+    }
+
+    @Transactional
+    public int deleteShiftsByUserId(Long userId) {
+        if (userId == null) return 0;
+        // First, clean up the schedules_shifts join table
+        shiftRepositry.deleteScheduleShiftsJoinTableByUserId(userId);
+        shiftRepositry.flush();
+        // Then delete the shifts
+        int deleted = shiftRepositry.deleteByWorkerIdNative(userId);
+        shiftRepositry.flush();
+        return deleted;
+    }
+
+    @Transactional
+    public int deleteShiftsByWorkstationId(Long workstationId) {
+        if (workstationId == null) return 0;
+        // First, clean up the schedules_shifts join table
+        shiftRepositry.deleteScheduleShiftsJoinTableByWorkstationId(workstationId);
+        shiftRepositry.flush();
+        // Then delete the shifts
+        int deleted = shiftRepositry.deleteByWorkstationIdNative(workstationId);
+        shiftRepositry.flush();
+        return deleted;
     }
 
     public boolean workstationOcupied(Workstation workstation, Date date, Time time) {

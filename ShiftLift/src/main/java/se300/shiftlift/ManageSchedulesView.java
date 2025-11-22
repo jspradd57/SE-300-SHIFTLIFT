@@ -401,6 +401,13 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             return;
         }
 
+        // Check if a published schedule already exists
+        if (scheduleService.hasPublishedSchedule()) {
+            Notification.show("A published schedule already exists. Please discard it before publishing a new one.",
+                4000, Notification.Position.MIDDLE);
+            return;
+        }
+
         try {
             selectedSchedule.setApproved(true);
             scheduleService.save(selectedSchedule);
@@ -443,37 +450,15 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
         }
 
         try {
-            // First, remove all shifts within the schedule date range
-            Date startDate = selectedSchedule.getStartDate();
-            Date endDate = selectedSchedule.getEndDate();
+            // Use the service method that properly deletes shifts and the schedule
+            int deletedShifts = scheduleService.deleteScheduleWithShifts(selectedSchedule, shiftService);
             
-            if (startDate != null && endDate != null) {
-                List<Shift> allShifts = shiftService.getAllShifts();
-                int startDateInt = startDate.get_Date();
-                int endDateInt = endDate.get_Date();
-                
-                // Find and delete shifts within the schedule date range
-                List<Shift> shiftsToDelete = allShifts.stream()
-                    .filter(shift -> {
-                        int shiftDateInt = shift.getDate().get_Date();
-                        return shiftDateInt >= startDateInt && shiftDateInt <= endDateInt;
-                    })
-                    .toList();
-                
-                // Delete each shift
-                for (Shift shift : shiftsToDelete) {
-                    shiftService.deleteShift(shift);
-                }
-                
-                Notification.show("Deleted " + shiftsToDelete.size() + " shifts", 
-                    2000, Notification.Position.BOTTOM_START);
+            String message = "Schedule discarded successfully!";
+            if (deletedShifts > 0) {
+                message += " (" + deletedShifts + " shifts deleted)";
             }
             
-            // Then delete the schedule itself
-            scheduleService.delete(selectedSchedule);
-            
-            Notification.show("Schedule discarded successfully!", 
-                3000, Notification.Position.BOTTOM_START);
+            Notification.show(message, 3000, Notification.Position.BOTTOM_START);
             
             // Reload the schedules list
             loadSchedules();
@@ -481,6 +466,7 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
         } catch (Exception e) {
             Notification.show("Error discarding schedule: " + e.getMessage(), 
                 4000, Notification.Position.MIDDLE);
+            e.printStackTrace();
         }
     }
 
@@ -524,33 +510,9 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             // Remove expired schedules and their shifts
             int totalShiftsDeleted = 0;
             for (Schedule expiredSchedule : expiredSchedules) {
-                // First, remove all shifts within the schedule date range
-                Date startDate = expiredSchedule.getStartDate();
-                Date endDate = expiredSchedule.getEndDate();
-                
-                if (startDate != null && endDate != null) {
-                    List<Shift> allShifts = shiftService.getAllShifts();
-                    int startDateInt = startDate.get_Date();
-                    int endDateInt = endDate.get_Date();
-                    
-                    // Find and delete shifts within the schedule date range
-                    List<Shift> shiftsToDelete = allShifts.stream()
-                        .filter(shift -> {
-                            int shiftDateInt = shift.getDate().get_Date();
-                            return shiftDateInt >= startDateInt && shiftDateInt <= endDateInt;
-                        })
-                        .toList();
-                    
-                    // Delete each shift
-                    for (Shift shift : shiftsToDelete) {
-                        shiftService.deleteShift(shift);
-                    }
-                    
-                    totalShiftsDeleted += shiftsToDelete.size();
-                }
-                
-                // Then delete the schedule itself
-                scheduleService.delete(expiredSchedule);
+                // Use the service method that properly deletes shifts and the schedule
+                int deletedShifts = scheduleService.deleteScheduleWithShifts(expiredSchedule, shiftService);
+                totalShiftsDeleted += deletedShifts;
             }
             
             // Show notification if any cleanup was performed

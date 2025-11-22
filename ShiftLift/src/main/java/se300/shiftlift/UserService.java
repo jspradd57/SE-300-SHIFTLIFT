@@ -6,10 +6,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 @Service
 public class UserService {
     private final UserRepository userRepository;
     private final ShiftService shiftService;
+    
+    @PersistenceContext
+    private EntityManager entityManager;
     
     UserService(UserRepository userRepository, ShiftService shiftService) {
         this.userRepository = userRepository;
@@ -114,44 +120,55 @@ public class UserService {
 
     @Transactional
     public int delete(User user) {
-        if (user == null) return 0;
+        if (user == null || user.getId() == null) return 0;
         
-        // First, delete all shifts associated with this user
-        List<Shift> userShifts = shiftService.getAllShifts().stream()
-            .filter(shift -> shift.getStudentWorker() != null && shift.getStudentWorker().equals(user))
-            .toList();
+        // Count shifts before deleting
+        List<Shift> allShifts = shiftService.getAllShifts();
+        int deletedShiftsCount = (int) allShifts.stream()
+            .filter(shift -> shift.getStudentWorker() != null && 
+                           shift.getStudentWorker().getId() != null && 
+                           shift.getStudentWorker().getId().equals(user.getId()))
+            .count();
         
-        int deletedShiftsCount = userShifts.size();
-        for (Shift shift : userShifts) {
-            shiftService.deleteShift(shift);
+        boolean wasStudentWorker = user instanceof StudentWorker;
+        
+        // Clear the persistence context first to avoid any cached entities
+        entityManager.clear();
+        
+        // Use the batch delete query to delete all shifts for this user
+        // This uses JPQL and doesn't load entities into memory
+        shiftService.deleteShiftsByUserId(user.getId());
+        
+        // Delete the user
+        userRepository.deleteById(user.getId());
+        
+        // Recalculate seniority in a separate method/transaction if needed
+        if (wasStudentWorker) {
+            recalculateSeniority();
         }
         
-        // Then delete the user
-        userRepository.delete(user);
-        userRepository.flush();
-        
-        // After deleting a user, regenerate seniority numbers for remaining student workers.
-        // Seniority numbers are compressed to consecutive integers starting at 1 where
-        // 1 is the most senior (lowest number) and larger numbers are lower seniority.
-        List<User> all = userRepository.findAll();
+        return deletedShiftsCount;
+    }
+    
+    @Transactional
+    public void recalculateSeniority() {
+        // Fetch all users from database
+        List<User> allUsers = userRepository.findAll();
 
-        // Extract StudentWorker instances and sort them by current seniority (ascending).
-        List<StudentWorker> students = all.stream()
+        // Extract StudentWorker instances and sort them by current seniority (ascending)
+        List<StudentWorker> students = allUsers.stream()
                 .filter(u -> u instanceof StudentWorker)
                 .map(u -> (StudentWorker) u)
                 .sorted((a, b) -> Integer.compare(a.getSeniority(), b.getSeniority()))
                 .toList();
 
-        // Reassign seniority sequentially starting at 1.
+        // Reassign seniority sequentially starting at 1
         int seniority = 1;
         for (StudentWorker sw : students) {
             sw.setSeniorityNumber(seniority);
-            seniority++;
             userRepository.save(sw);
+            seniority++;
         }
-        userRepository.flush();
-        
-        return deletedShiftsCount;
     }
 
     @Transactional(readOnly = true)
