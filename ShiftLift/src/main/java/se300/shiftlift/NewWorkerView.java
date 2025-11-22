@@ -7,7 +7,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.notification.Notification;
@@ -37,7 +37,7 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
     private HorizontalLayout layoutRow = new HorizontalLayout();
     private VerticalLayout layoutColumn4 = new VerticalLayout();
     private VerticalLayout layoutColumn2 = new VerticalLayout();
-    private H1 h1 = new H1();
+
     private Paragraph textMedium = new Paragraph();
     private Hr hr = new Hr();
     private VerticalLayout layoutColumn3 = new VerticalLayout();
@@ -69,12 +69,7 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
         layoutColumn4.getStyle().set("flex-grow", "1");
         layoutColumn2.setWidth("100%");
         layoutColumn2.getStyle().set("flex-grow", "1");
-        h1.setText("Adding New Worker");
-        layoutColumn2.setAlignSelf(FlexComponent.Alignment.CENTER, h1);
-        h1.setWidth("max-content");
-        h1.getStyle().set("font-family", "Poppins, sans-serif");
-    // Shiftlift blue title color
-    h1.getStyle().set("color", "#156fabff");
+
         textMedium.setText(
                 "Please enter new worker information. Please enter a valid ERAU email, the new users username will be their email before the '@'. The assigned password can be changed later after user logs-in.");
         textMedium.setWidth("100%");
@@ -113,26 +108,35 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
         textSmall.setWidth("100%");
         textSmall.getStyle().set("font-size", "var(--lumo-font-size-xs)");
         layoutColumn5.getStyle().set("flex-grow", "1");
-    // Add a right-aligned top bar for Logout at the very top (to match MainMenu)
+    // Title for topBar
+    H2 topTitle = new H2("Adding New Worker");
+    topTitle.getStyle()
+           .set("color", "#156fabff")
+           .set("font-family", "Poppins, sans-serif")
+           .set("margin", "0")
+           .set("font-size", "24px");
+
+    // Add a top bar with title and logout button
     Button logoutBtn = new Button("Logout");
     logoutBtn.getStyle().set("color", "#666666");
     logoutBtn.addClickListener(e -> Auth.logoutToLogin());
-    HorizontalLayout topBar = new HorizontalLayout(logoutBtn);
+    HorizontalLayout topBar = new HorizontalLayout(topTitle, logoutBtn);
     topBar.setWidthFull();
     topBar.setAlignItems(Alignment.CENTER);
-    topBar.setJustifyContentMode(JustifyContentMode.END);
-    topBar.setPadding(false);
-    topBar.setSpacing(false);
-    topBar.getStyle().set("margin", "0");
+    topBar.setJustifyContentMode(JustifyContentMode.BETWEEN);
+    topBar.setPadding(true);
+    topBar.setSpacing(true);
+    topBar.getStyle()
+        .set("margin", "0")
+        .set("background-color", "white")
+        .set("padding", "16px 20px");
     getContent().add(topBar);
 
     getContent().add(layoutRow3);
     getContent().add(layoutRow);
         layoutRow.add(layoutColumn4);
         layoutRow.add(layoutColumn2);
-        // keep title centered and with consistent bottom margin
-        h1.getStyle().set("margin", "0 0 24px 0");
-        layoutColumn2.add(h1);
+
         layoutColumn2.add(textMedium);
         layoutColumn2.add(hr);
         layoutColumn2.add(layoutColumn3);

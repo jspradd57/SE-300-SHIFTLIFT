@@ -2,14 +2,14 @@ package se300.shiftlift;
 
 import java.util.List;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -41,7 +41,7 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
     private VerticalLayout layoutColumn5 = new VerticalLayout();
     private VerticalLayout layoutColumn7 = new VerticalLayout();
     private VerticalLayout layoutColumn3 = new VerticalLayout();
-    private H1 h12 = new H1();
+
     private HorizontalLayout layoutRow6 = new HorizontalLayout();
     private VerticalLayout layoutColumn8 = new VerticalLayout();
     private TextField emailTextField = new TextField();
@@ -229,8 +229,16 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
             .set("margin-right", "20px");
         logoutBtn.addClickListener(e -> Auth.logoutToLogin());
 
+        // Title for navbar
+        H2 navTitle = new H2("Edit User Data");
+        navTitle.getStyle()
+               .set("color", "#156fabff")
+               .set("font-family", "Poppins, sans-serif")
+               .set("margin", "0")
+               .set("font-size", "24px");
+
         // Navbar layout (this is the header)
-        var header = new HorizontalLayout(toggle, logoutBtn);
+        var header = new HorizontalLayout(toggle, navTitle, logoutBtn);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(Alignment.CENTER);
         header.setJustifyContentMode(JustifyContentMode.BETWEEN);
@@ -254,11 +262,7 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         layoutColumn7.getStyle().set("flex-grow", "1");
         layoutColumn7.setJustifyContentMode(JustifyContentMode.CENTER);
         layoutColumn7.setAlignItems(Alignment.CENTER);
-        h12.setText("Edit User Data");
-        h12.setWidth("max-content");
-        h12.getStyle().set("font-family", "Poppins, sans-serif");
-    // Shiftlift blue title color
-    h12.getStyle().set("color", "#156fabff");
+
         layoutRow6.setWidthFull();
         //layoutColumn2.setFlexGrow(1.0, layoutRow6);
         layoutRow6.addClassName(Gap.MEDIUM);
@@ -333,9 +337,7 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
     contentLayout.add(layoutRow5);
         layoutRow5.add(layoutColumn5);
         layoutRow5.add(layoutColumn7);
-        // keep title centered and with consistent bottom margin
-        h12.getStyle().set("margin", "0 0 24px 0");
-        layoutColumn7.add(h12);
+
         layoutColumn7.add(layoutRow6);
         layoutRow6.add(layoutColumn8);
         layoutColumn8.add(emailTextField);

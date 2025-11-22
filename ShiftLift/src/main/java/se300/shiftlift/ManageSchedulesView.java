@@ -10,7 +10,7 @@ import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -97,8 +97,16 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             .set("margin-right", "20px");
         logoutBtn.addClickListener(e -> Auth.logoutToLogin());
 
+        // Title for navbar
+        H2 navTitle = new H2("Manage Schedules");
+        navTitle.getStyle()
+               .set("color", "#156fabff")
+               .set("font-family", "Poppins, sans-serif")
+               .set("margin", "0")
+               .set("font-size", "24px");
+
         // Navbar layout (this is the header)
-        var header = new HorizontalLayout(toggle, logoutBtn);
+        var header = new HorizontalLayout(toggle, navTitle, logoutBtn);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
         header.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
@@ -108,14 +116,6 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             .set("background-color", "white")
             .set("padding", "16px 20px");
         addToNavbar(header);
-
-        // Title
-        H1 title = new H1("Manage Schedules");
-        title.getStyle()
-            .set("color", "#156fabff")
-            .set("font-family", "Poppins, sans-serif")
-            .set("font-size", "48px")
-            .set("margin-bottom", "24px");
 
         // Create action buttons
         Button returnButton = new Button("Return");
@@ -198,7 +198,7 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
         container.setAlignItems(FlexComponent.Alignment.STRETCH);
 
         // Create content layout
-        VerticalLayout contentLayout = new VerticalLayout(title, container);
+        VerticalLayout contentLayout = new VerticalLayout(container);
         contentLayout.setWidthFull();
         contentLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         contentLayout.setPadding(true);
@@ -399,6 +399,8 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             scheduleService.save(selectedSchedule);
             Notification.show("Schedule published successfully!", 3000, Notification.Position.BOTTOM_START);
             loadSchedules(); // Reload to update colors
+            // Navigate to manage-schedules after save
+            UI.getCurrent().navigate("manage-schedules");
         } catch (Exception e) {
             Notification.show("Error publishing schedule: " + e.getMessage(), 
                 4000, Notification.Position.MIDDLE);
