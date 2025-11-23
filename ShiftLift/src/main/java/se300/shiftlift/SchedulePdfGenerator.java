@@ -259,67 +259,100 @@ public class SchedulePdfGenerator {
 
     /**
      * Draws all shifts within a single day cell.
+     * Shifts are grouped by workstation and sorted by start time within each group.
      */
     private static void drawShiftsInCell(PDPageContentStream cs, List<Shift> shifts, float cellX, float cellY, float cellWidth, float cellHeight, Map<Long, Integer> workstationColorMap) throws IOException {
         float shiftY = cellY - CELL_PADDING - DATE_FONT_SIZE - 15;
         float maxShiftsToShow = (int) ((cellHeight - CELL_PADDING - DATE_FONT_SIZE - 20) / (SHIFT_LINE_HEIGHT * 2)); // Each shift takes 2 lines now
         
-        int shiftCount = 0;
+        // Group shifts by workstation, then sort each group by start time
+        Map<Long, List<Shift>> shiftsByWorkstation = new HashMap<>();
         for (Shift shift : shifts) {
-            if (shiftCount >= maxShiftsToShow) {
-                // Show "+X more" if there are too many shifts
-                int remaining = shifts.size() - shiftCount;
-                cs.setNonStrokingColor(new Color(150, 150, 150));
+            Long workstationId = shift.getWorkstation() != null ? shift.getWorkstation().getId() : -1L;
+            shiftsByWorkstation.computeIfAbsent(workstationId, k -> new ArrayList<>()).add(shift);
+        }
+        
+        // Sort shifts within each workstation by start time
+        for (List<Shift> workstationShifts : shiftsByWorkstation.values()) {
+            workstationShifts.sort(Comparator.comparingInt(s -> s.getTime().getStart_time()));
+        }
+        
+        // Get workstations in sorted order (by workstation name for consistency)
+        List<Long> sortedWorkstationIds = new ArrayList<>(shiftsByWorkstation.keySet());
+        sortedWorkstationIds.sort((id1, id2) -> {
+            if (id1.equals(-1L)) return 1; // Put null workstations last
+            if (id2.equals(-1L)) return -1;
+            
+            // Find the workstation names to compare
+            Shift shift1 = shiftsByWorkstation.get(id1).get(0);
+            Shift shift2 = shiftsByWorkstation.get(id2).get(0);
+            String name1 = shift1.getWorkstation() != null ? shift1.getWorkstation().getName() : "ZZZ";
+            String name2 = shift2.getWorkstation() != null ? shift2.getWorkstation().getName() : "ZZZ";
+            return name1.compareTo(name2);
+        });
+        
+        int shiftCount = 0;
+        
+        // Draw shifts grouped by workstation
+        for (Long workstationId : sortedWorkstationIds) {
+            List<Shift> workstationShifts = shiftsByWorkstation.get(workstationId);
+            
+            for (Shift shift : workstationShifts) {
+                if (shiftCount >= maxShiftsToShow) {
+                    // Show "+X more" if there are too many shifts
+                    int remaining = shifts.size() - shiftCount;
+                    cs.setNonStrokingColor(new Color(150, 150, 150));
+                    cs.beginText();
+                    cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_OBLIQUE), SHIFT_FONT_SIZE - 1);
+                    cs.newLineAtOffset(cellX + CELL_PADDING, shiftY);
+                    cs.showText("+" + remaining + " more...");
+                    cs.endText();
+                    cs.setNonStrokingColor(Color.BLACK);
+                    return;
+                }
+                
+                // Draw shift box with color based on workstation
+                Color workstationColor = getWorkstationColor(shift.getWorkstation(), workstationColorMap);
+                cs.setNonStrokingColor(workstationColor);
+                float boxHeight = (SHIFT_LINE_HEIGHT * 2.5f);
+                float boxWidth = cellWidth - (2 * CELL_PADDING);
+                cs.addRect(cellX + CELL_PADDING, shiftY - boxHeight, boxWidth, boxHeight);
+                cs.fill();
+                
+                // Draw shift text - Line 1: Time and Initials
+                cs.setNonStrokingColor(Color.WHITE);
                 cs.beginText();
-                cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_OBLIQUE), SHIFT_FONT_SIZE - 1);
-                cs.newLineAtOffset(cellX + CELL_PADDING, shiftY);
-                cs.showText("+" + remaining + " more...");
+                cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), SHIFT_FONT_SIZE);
+                cs.newLineAtOffset(cellX + CELL_PADDING + 3, shiftY - 10);
+                
+                String timeStr = shift.getTime().toString();
+                String workerName = shift.getStudentWorker() != null ? 
+                    shift.getStudentWorker().getInitials() : "???";
+                
+                String line1 = timeStr + " - " + workerName;
+                cs.showText(line1);
+                cs.endText();
+                
+                // Draw shift text - Line 2: Workstation name
+                cs.setNonStrokingColor(Color.WHITE);
+                cs.beginText();
+                cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), SHIFT_FONT_SIZE - 0.5f);
+                cs.newLineAtOffset(cellX + CELL_PADDING + 3, shiftY - 21);
+                
+                String workstationName = shift.getWorkstation() != null ?
+                    shift.getWorkstation().getName() : "N/A";
+                
+                // Truncate workstation name if too long
+                if (workstationName.length() > 18) {
+                    workstationName = workstationName.substring(0, 15) + "...";
+                }
+                cs.showText(workstationName);
                 cs.endText();
                 cs.setNonStrokingColor(Color.BLACK);
-                break;
+                
+                shiftY -= (SHIFT_LINE_HEIGHT * 2.5f);
+                shiftCount++;
             }
-            
-            // Draw shift box with color based on workstation
-            Color workstationColor = getWorkstationColor(shift.getWorkstation(), workstationColorMap);
-            cs.setNonStrokingColor(workstationColor);
-            float boxHeight = (SHIFT_LINE_HEIGHT * 2.5f);
-            float boxWidth = cellWidth - (2 * CELL_PADDING);
-            cs.addRect(cellX + CELL_PADDING, shiftY - boxHeight, boxWidth, boxHeight);
-            cs.fill();
-            
-            // Draw shift text - Line 1: Time and Initials
-            cs.setNonStrokingColor(Color.WHITE);
-            cs.beginText();
-            cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), SHIFT_FONT_SIZE);
-            cs.newLineAtOffset(cellX + CELL_PADDING + 3, shiftY - 10);
-            
-            String timeStr = shift.getTime().toString();
-            String workerName = shift.getStudentWorker() != null ? 
-                shift.getStudentWorker().getInitials() : "???";
-            
-            String line1 = timeStr + " - " + workerName;
-            cs.showText(line1);
-            cs.endText();
-            
-            // Draw shift text - Line 2: Workstation name
-            cs.setNonStrokingColor(Color.WHITE);
-            cs.beginText();
-            cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), SHIFT_FONT_SIZE - 0.5f);
-            cs.newLineAtOffset(cellX + CELL_PADDING + 3, shiftY - 21);
-            
-            String workstationName = shift.getWorkstation() != null ?
-                shift.getWorkstation().getName() : "N/A";
-            
-            // Truncate workstation name if too long
-            if (workstationName.length() > 18) {
-                workstationName = workstationName.substring(0, 15) + "...";
-            }
-            cs.showText(workstationName);
-            cs.endText();
-            cs.setNonStrokingColor(Color.BLACK);
-            
-            shiftY -= (SHIFT_LINE_HEIGHT * 2.5f);
-            shiftCount++;
         }
     }
 
