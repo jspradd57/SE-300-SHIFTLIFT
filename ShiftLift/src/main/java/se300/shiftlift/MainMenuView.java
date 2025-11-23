@@ -92,6 +92,7 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             styleButton(newShiftButton);
             
             Button downloadPdfButton = createDownloadPdfButton();
+            Button downloadHoursReportButton = createDownloadHoursReportButton();
             
             // Apply styling to each link
             
@@ -100,7 +101,7 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             styleRouterLink(manageSchedulesLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftButton, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftButton, downloadPdfButton, downloadHoursReportButton, changePasswordLink);
         }
         else{
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
@@ -844,7 +845,7 @@ private void styleRouterLink(RouterLink link) {
 }
 
 private Button createDownloadPdfButton() {
-    Button downloadButton = new Button("Download PDF");
+    Button downloadButton = new Button("Download Schedule PDF");
     downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     downloadButton.getStyle()
         .set("color", "#156fabff")
@@ -904,6 +905,75 @@ private Button createDownloadPdfButton() {
                 
         } catch (Exception ex) {
             Notification.show("Error generating PDF: " + ex.getMessage(), 
+                5000, Notification.Position.MIDDLE)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        }
+    });
+    
+    return downloadButton;
+}
+
+private Button createDownloadHoursReportButton() {
+    Button downloadButton = new Button("Download Hours Report");
+    downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    downloadButton.getStyle()
+        .set("color", "#156fabff")
+        .set("font-family", "Poppins, sans-serif")
+        .set("padding", "8px 0")
+        .set("font-size", "16px")
+        .set("text-align", "left")
+        .set("justify-content", "flex-start");
+    
+    downloadButton.addClickListener(e -> {
+        try {
+            // Find the latest published schedule
+            List<Schedule> allSchedules = scheduleService.getAllSchedules();
+            java.util.Optional<Schedule> latestPublished = allSchedules.stream()
+                .filter(s -> s.getApproved() != null && s.getApproved())
+                .max(java.util.Comparator.comparing(Schedule::getId));
+            
+            if (latestPublished.isEmpty()) {
+                Notification.show("No published schedule available to download", 
+                    3000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                return;
+            }
+            
+            Schedule schedule = latestPublished.get();
+            scheduleService.loadShiftsForSchedule(schedule);
+            
+            // Generate Hours Report PDF to temporary file
+            String tempDir = System.getProperty("java.io.tmpdir");
+            String pdfPath = tempDir + "/hours-report-" + schedule.getId() + ".pdf";
+            HoursReportPdfGenerator.generateHoursReportPdf(schedule, pdfPath);
+            
+            // Trigger download
+            java.io.File pdfFile = new java.io.File(pdfPath);
+            com.vaadin.flow.server.StreamResource resource = 
+                new com.vaadin.flow.server.StreamResource("hours-report.pdf", 
+                    () -> {
+                        try {
+                            return new java.io.FileInputStream(pdfFile);
+                        } catch (java.io.FileNotFoundException ex) {
+                            return null;
+                        }
+                    });
+            
+            com.vaadin.flow.component.html.Anchor downloadLink = 
+                new com.vaadin.flow.component.html.Anchor(resource, "");
+            downloadLink.getElement().setAttribute("download", true);
+            downloadLink.setId("hours-pdf-download-" + System.currentTimeMillis());
+            
+            getElement().appendChild(downloadLink.getElement());
+            com.vaadin.flow.component.UI.getCurrent().getPage().executeJs(
+                "document.getElementById($0).click()", downloadLink.getId().get()
+            );
+            
+            Notification.show("Hours report download started", 2000, Notification.Position.BOTTOM_START)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                
+        } catch (Exception ex) {
+            Notification.show("Error generating hours report: " + ex.getMessage(), 
                 5000, Notification.Position.MIDDLE)
                 .addThemeVariants(NotificationVariant.LUMO_ERROR);
         }
