@@ -120,7 +120,12 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
     Button logoutBtn = new Button("Logout");
     logoutBtn.getStyle().set("color", "#666666");
     logoutBtn.addClickListener(e -> Auth.logoutToLogin());
-    HorizontalLayout topBar = new HorizontalLayout(topTitle, logoutBtn);
+    
+    // Create spacer to center the title
+    VerticalLayout spacer = new VerticalLayout();
+    spacer.setWidth("120px"); // Match approximate logout button width
+    
+    HorizontalLayout topBar = new HorizontalLayout(spacer, topTitle, logoutBtn);
     topBar.setWidthFull();
     topBar.setAlignItems(Alignment.CENTER);
     topBar.setJustifyContentMode(JustifyContentMode.BETWEEN);
