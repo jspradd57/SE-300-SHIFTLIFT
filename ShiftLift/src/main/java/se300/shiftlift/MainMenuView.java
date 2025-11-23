@@ -386,7 +386,7 @@ private Component createColorKey() {
          .set("justify-content", "center")
          .set("color", "white")
          .set("font-weight", "bold")
-         .set("font-size", "12px")
+         .set("font-size", "clamp(8px, 0.9vw, 24px)")
          .set("text-align", "center");
     
     // Add hover effects
