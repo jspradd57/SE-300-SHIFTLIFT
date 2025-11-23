@@ -634,7 +634,25 @@ private void updateCalendarHeader(String[] dates) {
         dayCol.setWidth("20%");
         
         H4 dayName = new H4(days[i]);
+        // Use responsive font sizing with clamp: min 10px, preferred 1.2vw, max 20px
+        dayName.getStyle()
+            .set("font-size", "clamp(10px, 1.2vw, 20px)")
+            .set("margin", "0")
+            .set("white-space", "nowrap")
+            .set("overflow", "hidden")
+            .set("text-overflow", "ellipsis")
+            .set("font-family", "Poppins, sans-serif")
+            .set("color", "#156fabff");
+        
         Span date = new Span(dates[i]);
+        // Date also scales responsively but slightly smaller
+        date.getStyle()
+            .set("font-size", "clamp(8px, 1vw, 16px)")
+            .set("white-space", "nowrap")
+            .set("overflow", "hidden")
+            .set("text-overflow", "ellipsis")
+            .set("font-family", "Poppins, sans-serif")
+            .set("color", "#666");
         
         dayCol.add(dayName, date);
         dayCol.setAlignItems(Alignment.CENTER);
