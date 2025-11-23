@@ -382,8 +382,8 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
                     }
                 }
                 
-                // Check if workstation is occupied and handle senior override
-                if (shiftService.workstationOcupied(workstationComboBox.getValue(), shiftDate, shiftTime, excludeShiftId) && shiftService.workstationAvailable(shiftDate, shiftTime) != null) {
+                // Check if workstation is occupied and handle admin/senior override
+                if (shiftService.workstationOcupied(workstationComboBox.getValue(), shiftDate, shiftTime, excludeShiftId)) {
                     // Get the conflicting shift
                     Shift conflictingShift = shiftService.getConflictingShift(workstationComboBox.getValue(), shiftDate, shiftTime);
                     
@@ -392,8 +392,97 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
                         User currentWorker = workerComboBox.getValue();
                         User conflictingWorker = conflictingShift.getStudentWorker();
                         
-                        // Check if current worker is more senior
-                        if (shiftService.isSenior(currentWorker, conflictingWorker)) {
+                        // Check if logged in user is an admin
+                        if (Auth.isAdmin()) {
+                            // Admin override - show confirmation dialog
+                            Long availableWorkstationId = shiftService.workstationAvailable(shiftDate, shiftTime);
+                            
+                            ConfirmDialog dialog = new ConfirmDialog();
+                            dialog.setHeader("Admin Override - Workstation Conflict");
+                            
+                            if (availableWorkstationId != null) {
+                                dialog.setText(String.format(
+                                    "The selected workstation is currently assigned to %s. " +
+                                    "As an admin, you can override this and reassign %s to an available workstation. " +
+                                    "Do you want to proceed?",
+                                    conflictingWorker.getUsername(),
+                                    conflictingWorker.getUsername()
+                                ));
+                            } else {
+                                dialog.setText(String.format(
+                                    "WARNING: The selected workstation is currently assigned to %s and NO other workstations are available. " +
+                                    "As an admin, you can override this, but %s's shift will be DELETED. " +
+                                    "Do you want to proceed?",
+                                    conflictingWorker.getUsername(),
+                                    conflictingWorker.getUsername()
+                                ));
+                            }
+                            
+                            dialog.setCancelable(true);
+                            dialog.setConfirmText("Override");
+                            dialog.setCancelText("Cancel");
+                            
+                            dialog.addConfirmListener(event -> {
+                                try {
+                                    if (availableWorkstationId != null) {
+                                        // Reassign conflicting worker to available workstation
+                                        Workstation newWorkstation = workstationService.findById(availableWorkstationId).orElse(null);
+                                        
+                                        if (newWorkstation != null) {
+                                            shiftService.updateShift(
+                                                conflictingShift,
+                                                conflictingShift.getDate(),
+                                                conflictingShift.getStudentWorker(),
+                                                newWorkstation,
+                                                conflictingShift.getTime()
+                                            );
+                                            
+                                            Notification.show(String.format("Admin override: %s reassigned to another workstation.", 
+                                                conflictingWorker.getUsername()), 
+                                                3000, Notification.Position.MIDDLE);
+                                        }
+                                    } else {
+                                        // No available workstation - delete the conflicting shift
+                                        shiftService.deleteShift(conflictingShift);
+                                        
+                                        Notification.show(String.format("Admin override: %s's shift was deleted (no available workstation for reassignment).", 
+                                            conflictingWorker.getUsername()), 
+                                            4000, Notification.Position.MIDDLE);
+                                    }
+                                    
+                                    // Update current shift
+                                    if (currentShift != null) {
+                                        shiftService.updateShift(
+                                            currentShift,
+                                            shiftDate,
+                                            currentWorker,
+                                            workstationComboBox.getValue(),
+                                            shiftTime
+                                        );
+                                    } else {
+                                        shiftService.addShift(
+                                            shiftDate,
+                                            currentWorker,
+                                            workstationComboBox.getValue(),
+                                            shiftTime
+                                        );
+                                    }
+                                    
+                                    dirty = false;
+                                    Notification.show("Shift updated successfully!", 
+                                        3000, Notification.Position.BOTTOM_START);
+                                    UI.getCurrent().navigate("main-menu");
+                                } catch (Exception ex) {
+                                    Notification.show("Error during admin override: " + ex.getMessage(), 
+                                        4000, Notification.Position.MIDDLE);
+                                }
+                            });
+                            
+                            dialog.open();
+                            return; // Exit early, dialog handles the rest
+                        }
+                        // Check if current worker is more senior (non-admin path)
+                        else if (shiftService.isSenior(currentWorker, conflictingWorker)) {
                             // Find an available workstation for the conflicting shift
                             Long availableWorkstationId = shiftService.workstationAvailable(shiftDate, shiftTime);
                             
@@ -468,11 +557,6 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
                             return;
                         }
                     }
-                } else if (shiftService.workstationOcupied(workstationComboBox.getValue(), shiftDate, shiftTime, excludeShiftId)) {
-                    // Workstation is occupied but no alternative available
-                    Notification.show("Selected workstation is already occupied for the chosen date and time.", 
-                        4000, Notification.Position.MIDDLE);
-                    return;
                 }
                 
                 if (currentShift != null) {

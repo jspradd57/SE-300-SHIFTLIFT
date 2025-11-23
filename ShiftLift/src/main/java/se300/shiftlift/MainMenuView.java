@@ -200,7 +200,7 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     // Whole grid area under the day labels
     HorizontalLayout grid = new HorizontalLayout();
     grid.setWidthFull();
-    grid.setHeight("500px"); // can tweak
+    grid.setHeight("720px"); // 18 half-hour slots × 40px per slot
     grid.getStyle()
         .set("border", "1px solid #e0e0e0")
         .set("box-sizing", "border-box")
@@ -218,11 +218,11 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
 
     LocalTime startTime = LocalTime.of(8, 0);   //first label (8am)
     LocalTime endTime   = LocalTime.of(17, 0);  //last label (5pm)
-    int slotMinutes = 60;                       //1-hour steps
+    int slotMinutes = 30;                       //30-minute (half-hour) steps
     int pxPerSlot = 40;                         //must match addShiftBlock
 
     for (LocalTime t = startTime; !t.isAfter(endTime); t = t.plusMinutes(slotMinutes)) {
-        Span label = new Span(t.toString());    //05:00, 06:00, etc...
+        Span label = new Span(t.toString());    //08:00, 08:30, 09:00, etc...
         label.getStyle()
              .set("font-size", "11px")
              .set("height", pxPerSlot + "px")
@@ -352,14 +352,18 @@ private Component createColorKey() {
                            Shift shift) {
 
     LocalTime gridStart = LocalTime.of(8, 0); // 👈 match startTime above (8am)
-    int slotMinutes = 60;
+    int slotMinutes = 30;  // Match the 30-minute time axis slots
     int pxPerSlot   = 40;
+    
+    // Calculate pixels per minute for granular positioning
+    double pxPerMinute = pxPerSlot / (double) slotMinutes;
 
     int minutesFromStart = (int)Duration.between(gridStart, shiftStart).toMinutes();
     int durationMinutes  = (int)Duration.between(shiftStart, shiftEnd).toMinutes();
 
-    int topPx    = (int)(minutesFromStart/(double) slotMinutes * pxPerSlot);
-    int heightPx = (int)(durationMinutes/(double) slotMinutes * pxPerSlot);
+    // Use minute-level precision for positioning
+    double topPx    = minutesFromStart * pxPerMinute;
+    double heightPx = durationMinutes * pxPerMinute;
 
     double wsWidth = 100.0 / workstationCount;
     double leftPercent = workstationIndex * wsWidth;
