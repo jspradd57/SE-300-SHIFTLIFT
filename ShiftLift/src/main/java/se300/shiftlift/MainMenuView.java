@@ -10,6 +10,7 @@ import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
@@ -36,6 +37,7 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     
     private final ScheduleService scheduleService;
     private final ShiftService shiftService;
+    private final UserService userService;
     private Schedule currentSchedule;
     private int currentWeekIndex = 0;
     private List<Week> availableWeeks;
@@ -47,10 +49,12 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     private int workstationCount = 5; // Default fallback
     private java.util.Map<Long, Integer> workstationColorMap = new java.util.HashMap<>();
     
-    public MainMenuView(ScheduleService scheduleService, ShiftService shiftService, WorkstationService workstationService) {
+    public MainMenuView(ScheduleService scheduleService, ShiftService shiftService, 
+                       WorkstationService workstationService, UserService userService) {
         this.scheduleService = scheduleService;
         this.shiftService = shiftService;
         this.workstationService = workstationService;
+        this.userService = userService;
         boolean admin = Auth.isAdmin();
         
         // Get dynamic workstation count
@@ -82,7 +86,10 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
             RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
+            
+            Button newShiftButton = new Button("Create New Shift");
+            newShiftButton.addClickListener(e -> openNewShiftDialog(null));
+            styleButton(newShiftButton);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
@@ -91,20 +98,21 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
             styleRouterLink(manageSchedulesLink);
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftButton, downloadPdfButton, changePasswordLink);
         }
         else{
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
+            
+            Button newShiftButton = new Button("Request New Shift");
+            newShiftButton.addClickListener(e -> openNewShiftDialog(null));
+            styleButton(newShiftButton);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
-            drawerLayout.add(newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(newShiftButton, downloadPdfButton, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
@@ -262,9 +270,9 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
         });
         dayCol.setHeightFull();           // same height as grid
 
-        // Add single-click listener to navigate to NewShiftView with selected date
+        // Add single-click listener to open NewShift dialog with selected date
         dayCol.getElement().addEventListener("click", e -> {
-            navigateToNewShiftWithDate(finalDayIndex);
+            openNewShiftDialogForDay(finalDayIndex);
         });
 
         // Load real shifts for this day from unpublished schedule
@@ -401,13 +409,13 @@ private Component createColorKey() {
              .set("box-shadow", "0 1px 3px rgba(0, 0, 0, 0.2)");
     });
     
-    // Add click listener to navigate to EditShiftView
+    // Add click listener to open EditShift dialog
     if (shift != null && shift.getId() != null) {
         // Only add click listener if user has permission to edit
         if(shift.getStudentWorker() != null && 
            (shift.getStudentWorker().getId().equals(Auth.getCurrentUser().getId()) || Auth.isAdmin())) {
             block.getElement().addEventListener("click", e -> {
-                navigateToEditShift(shift.getId());
+                openEditShiftDialog(shift.getId());
             }).addEventData("event.stopPropagation()");
             
             // Add tooltip
@@ -564,66 +572,6 @@ private String[] getScheduleWeekDates() {
     }
     
     return dates;
-}
-
-private void navigateToEditShift(Long shiftId) {
-    try {
-        java.util.Map<String, java.util.List<String>> params = new java.util.HashMap<>();
-        params.put("shiftId", java.util.List.of(shiftId.toString()));
-        com.vaadin.flow.router.QueryParameters qp = new com.vaadin.flow.router.QueryParameters(params);
-        com.vaadin.flow.component.UI.getCurrent().navigate("edit-shift", qp);
-    } catch (Exception e) {
-        // Fallback navigation without parameter
-        com.vaadin.flow.component.UI.getCurrent().navigate("edit-shift");
-    }
-}
-
-private void navigateToNewShiftWithDate(int dayIndex) {
-    try {
-        java.time.LocalDate targetDate;
-        
-        if (availableWeeks != null && !availableWeeks.isEmpty()) {
-            // Use week-based calculation
-            Week currentWeek = availableWeeks.get(currentWeekIndex);
-            Date startDate = currentWeek.getWeekStartDate();
-            java.time.LocalDate localStart = java.time.LocalDate.of(
-                startDate.get_year(), startDate.get_month(), startDate.get_day()
-            );
-            
-            java.time.LocalDate monday = localStart.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-            targetDate = monday.plusDays(dayIndex);
-        } else if (currentSchedule != null) {
-            // Use schedule start date for calculation
-            Date scheduleStart = currentSchedule.getStartDate();
-            java.time.LocalDate localStart = java.time.LocalDate.of(
-                scheduleStart.get_year(), 
-                scheduleStart.get_month(), 
-                scheduleStart.get_day()
-            );
-            
-            java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-            if (firstMonday.isBefore(localStart.minusDays(6))) {
-                firstMonday = firstMonday.plusWeeks(1);
-            }
-            targetDate = firstMonday.plusDays(dayIndex);
-        } else {
-            // Fallback to current date
-            targetDate = java.time.LocalDate.now();
-        }
-        
-        // Format date as YYYY-MM-DD for URL parameter
-        String dateParam = targetDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
-        
-        // Navigate to NewShiftView with date parameter
-        java.util.Map<String, String> params = new java.util.HashMap<>();
-        params.put("date", dateParam);
-        com.vaadin.flow.router.QueryParameters qp = com.vaadin.flow.router.QueryParameters.simple(params);
-        com.vaadin.flow.component.UI.getCurrent().navigate("new-shift", qp);
-        
-    } catch (Exception e) {
-        // Fallback navigation without date parameter
-        com.vaadin.flow.component.UI.getCurrent().navigate("new-shift");
-    }
 }
 
 private void updateCalendarHeader(String[] dates) {
@@ -793,6 +741,96 @@ private String formatDate(Date date) {
         date.get_day(), 
         date.get_year()
     );
+}
+
+private void openNewShiftDialog(java.time.LocalDate selectedDate) {
+    Dialog dialog = new Dialog();
+    dialog.setModal(true);
+    dialog.setDraggable(true);
+    dialog.setResizable(true);
+    dialog.setWidth("600px");
+    dialog.setMaxWidth("90vw");
+    
+    NewShiftDialogContent content = new NewShiftDialogContent(
+        userService, workstationService, shiftService, scheduleService, selectedDate,
+        () -> {
+            dialog.close();
+            updateScheduleGrid();
+        }
+    );
+    
+    dialog.add(content);
+    dialog.open();
+}
+
+private void openNewShiftDialogForDay(int dayIndex) {
+    try {
+        java.time.LocalDate targetDate;
+        
+        if (availableWeeks != null && !availableWeeks.isEmpty()) {
+            Week currentWeek = availableWeeks.get(currentWeekIndex);
+            Date startDate = currentWeek.getWeekStartDate();
+            java.time.LocalDate localStart = java.time.LocalDate.of(
+                startDate.get_year(), startDate.get_month(), startDate.get_day()
+            );
+            
+            java.time.LocalDate monday = localStart.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+            targetDate = monday.plusDays(dayIndex);
+        } else if (currentSchedule != null) {
+            Date scheduleStart = currentSchedule.getStartDate();
+            java.time.LocalDate localStart = java.time.LocalDate.of(
+                scheduleStart.get_year(), 
+                scheduleStart.get_month(), 
+                scheduleStart.get_day()
+            );
+            
+            java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+            if (firstMonday.isBefore(localStart.minusDays(6))) {
+                firstMonday = firstMonday.plusWeeks(1);
+            }
+            targetDate = firstMonday.plusDays(dayIndex);
+        } else {
+            targetDate = java.time.LocalDate.now();
+        }
+        
+        openNewShiftDialog(targetDate);
+    } catch (Exception e) {
+        openNewShiftDialog(null);
+    }
+}
+
+private void openEditShiftDialog(Long shiftId) {
+    Dialog dialog = new Dialog();
+    dialog.setModal(true);
+    dialog.setDraggable(true);
+    dialog.setResizable(true);
+    dialog.setWidth("600px");
+    dialog.setMaxWidth("90vw");
+    
+    EditShiftDialogContent content = new EditShiftDialogContent(
+        userService, workstationService, shiftService, scheduleService, shiftId,
+        () -> {
+            dialog.close();
+            updateScheduleGrid();
+        }
+    );
+    
+    dialog.add(content);
+    dialog.open();
+}
+
+private void styleButton(Button button) {
+    button.getStyle()
+        .set("color", "#156fabff")
+        .set("font-family", "Poppins, sans-serif")
+        .set("text-decoration", "none")
+        .set("padding", "8px 0")
+        .set("display", "block")
+        .set("font-size", "16px")
+        .set("background", "transparent")
+        .set("border", "none")
+        .set("cursor", "pointer")
+        .set("text-align", "left");
 }
 
 private void styleRouterLink(RouterLink link) {
