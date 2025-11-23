@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShiftLift User Guide</title>
+    <style>
+        @page {
+            margin: 1in;
+            size: letter;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+        }
+        
+        h1 {
+            color: #156fabff;
+            border-bottom: 3px solid #156fabff;
+            padding-bottom: 10px;
+            margin-top: 0;
+            page-break-after: avoid;
+        }
+        
+        h2 {
+            color: #156fabff;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 8px;
+            margin-top: 30px;
+            page-break-after: avoid;
+        }
+        
+        h3 {
+            color: #2c5f8d;
+            margin-top: 20px;
+            page-break-after: avoid;
+        }
+        
+        h4 {
+            color: #444;
+            margin-top: 15px;
+            page-break-after: avoid;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+            margin-top: -10px;
+            margin-bottom: 30px;
+        }
+        
+        .feature-box {
+            background: #f8f9fa;
+            border-left: 4px solid #156fabff;
+            padding: 15px;
+            margin: 15px 0;
+            page-break-inside: avoid;
+        }
+        
+        .feature-box h3 {
+            margin-top: 0;
+            color: #156fabff;
+        }
+        
+        ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .step-list {
+            counter-reset: step-counter;
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .step-list li {
+            counter-increment: step-counter;
+            margin: 15px 0;
+            padding-left: 40px;
+            position: relative;
+        }
+        
+        .step-list li::before {
+            content: counter(step-counter);
+            background: #156fabff;
+            color: white;
+            font-weight: bold;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            page-break-inside: avoid;
+        }
+        
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px 15px;
+            margin: 15px 0;
+            page-break-inside: avoid;
+        }
+        
+        .note strong {
+            color: #856404;
+        }
+        
+        .warning {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 12px 15px;
+            margin: 15px 0;
+            page-break-inside: avoid;
+        }
+        
+        .warning strong {
+            color: #721c24;
+        }
+        
+        .tip {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 12px 15px;
+            margin: 15px 0;
+            page-break-inside: avoid;
+        }
+        
+        .tip strong {
+            color: #0c5460;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        
+        th {
+            background: #156fabff;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+            page-break-after: always;
+        }
+        
+        .toc h2 {
+            margin-top: 0;
+            border-bottom: none;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        
+        .toc a {
+            color: #156fabff;
+            text-decoration: none;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        
+        .checkmark {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+            }
+            
+            .no-print {
+                display: none;
+            }
+            
+            a {
+                color: #156fabff;
+                text-decoration: none;
+            }
+            
+            h1, h2, h3, h4 {
+                page-break-after: avoid;
+            }
+            
+            .feature-box, .note, .warning, .tip, table, pre {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>ShiftLift User Guide</h1>
+    <p class="subtitle">Student Worker Shift Management System</p>
+    
+    <div class="toc">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#introduction">1. Introduction</a></li>
+            <li><a href="#getting-started">2. Getting Started</a></li>
+            <li><a href="#admin-features">3. Administrator Features</a>
+                <ul style="padding-left: 20px;">
+                    <li><a href="#manage-users">3.1 Managing Users</a></li>
+                    <li><a href="#manage-workstations">3.2 Managing Workstations</a></li>
+                    <li><a href="#manage-schedules">3.3 Managing Schedules</a></li>
+                    <li><a href="#manage-shifts">3.4 Managing Shifts</a></li>
+                </ul>
+            </li>
+            <li><a href="#student-features">4. Student Worker Features</a></li>
+            <li><a href="#seniority-system">5. Seniority and Override System</a></li>
+            <li><a href="#validation-rules">6. Validation Rules</a></li>
+            <li><a href="#troubleshooting">7. Troubleshooting</a></li>
+        </ul>
+    </div>
+    
+    <h2 id="introduction">1. Introduction</h2>
+    
+    <p>ShiftLift is a comprehensive web-based application designed to streamline the management of student worker schedules, shifts, and workstations. Built with Spring Boot and Vaadin, it provides an intuitive interface for both administrators and student workers.</p>
+    
+    <div class="feature-box">
+        <h3>Key Features</h3>
+        <ul>
+            <li><strong>Visual Calendar:</strong> Interactive weekly calendar with half-hour time slots</li>
+            <li><strong>Automatic Conflict Detection:</strong> Prevents double-booking of workers and workstations</li>
+            <li><strong>Seniority System:</strong> Automatic seniority calculation based on hire date</li>
+            <li><strong>Max Hours Protection:</strong> Prevents students from exceeding weekly hour limits</li>
+            <li><strong>Color-Coded Workstations:</strong> Easy visual identification of different workstations</li>
+            <li><strong>PDF Export:</strong> Download and print weekly schedules</li>
+        </ul>
+    </div>
+    
+    <h2 id="getting-started">2. Getting Started</h2>
+    
+    <h3>Accessing the Application</h3>
+    <p>Navigate to the application URL (typically <code>www.shiftlift-065i.onrender.com</code> in development) in your web browser.</p>
+    
+    <h3>Login</h3>
+    <ol class="step-list">
+        <li><strong>Enter your username</strong> in the first field</li>
+        <li><strong>Enter your password</strong> in the second field</li>
+        <li><strong>Click "Login"</strong> to access the system</li>
+    </ol>
+    
+    <div class="note">
+        <strong>Note:</strong> Your account type (Administrator or Student Worker) determines which features you can access.
+    </div>
+    
+    <h3>Main Navigation</h3>
+    <p>After logging in, you'll see the main calendar view. Use the hamburger menu (☰) on the left to access different features:</p>
+    
+    <ul>
+        <li><strong>Manage Workers</strong> (Admin only)</li>
+        <li><strong>Manage Workstations</strong> (Admin only)</li>
+        <li><strong>Manage Schedules</strong> (Admin only)</li>
+        <li><strong>Create New Shift</strong> / Request New Shift</li>
+        <li><strong>Download Schedule PDF</strong> (Admin only)</li>
+        <li><strong>Change Password</strong></li>
+    </ul>
+    
+    <h2 id="admin-features">3. Administrator Features</h2>
+    
+    <h3 id="manage-users">3.1 Managing Users</h3>
+    
+    <h4>Adding a New Worker</h4>
+    <ol class="step-list">
+        <li>Click <strong>Manage Workers</strong> in the navigation menu</li>
+        <li>Click <strong>Add New Worker</strong> button</li>
+        <li>Fill in the required information:
+            <ul>
+                <li><strong>Username:</strong> Unique identifier for the worker</li>
+                <li><strong>Email:</strong> Worker's email address</li>
+                <li><strong>Password:</strong> Initial password (user can change later)</li>
+                <li><strong>Hire Date:</strong> Affects seniority calculation</li>
+                <li><strong>Max Hours:</strong> Maximum weekly hours (default: 20)</li>
+                <li><strong>Worker Type:</strong> Student Worker or Manager</li>
+            </ul>
+        </li>
+        <li>Click <strong>Save</strong> to create the worker account</li>
+    </ol>
+    
+    <h4>Editing a Worker</h4>
+    <ol class="step-list">
+        <li>Navigate to <strong>Manage Workers</strong></li>
+        <li>Find the worker in the list</li>
+        <li>Click the <strong>Edit</strong> button next to their name</li>
+        <li>Modify the desired fields (password, max hours, etc.)</li>
+        <li>Click <strong>Update</strong> to save changes</li>
+    </ol>
+    
+    <div class="warning">
+        <strong>Warning:</strong> Deleting a worker will automatically remove all their assigned shifts. Seniority numbers for remaining workers will be recalculated.
+    </div>
+    
+    <h3 id="manage-workstations">3.2 Managing Workstations</h3>
+    
+    <h4>Adding a Workstation</h4>
+    <ol class="step-list">
+        <li>Navigate to <strong>Manage Workstations</strong></li>
+        <li>Click <strong>Add New Workstation</strong></li>
+        <li>Enter the workstation name</li>
+        <li>Click <strong>Save</strong></li>
+    </ol>
+    
+    <p>Each workstation is assigned a unique color in the calendar for easy identification.</p>
+    
+    <h4>Deleting a Workstation</h4>
+    <div class="warning">
+        <strong>Warning:</strong> Deleting a workstation will automatically remove all shifts assigned to that workstation.
+    </div>
+    
+    <h3 id="manage-schedules">3.3 Managing Schedules</h3>
+    
+    <h4>Creating a New Schedule</h4>
+    <ol class="step-list">
+        <li>Navigate to <strong>Manage Schedules</strong></li>
+        <li>Click <strong>Create New Schedule</strong></li>
+        <li>Select the <strong>Start Date</strong> (must be a Monday)</li>
+        <li>Select the <strong>End Date</strong> (must be a Friday)</li>
+        <li>Click <strong>Save</strong></li>
+    </ol>
+    
+    <div class="note">
+        <strong>Important:</strong> The system allows only 1 published and 1 unpublished schedule at a time. Delete expired schedules before creating new ones.
+    </div>
+    
+    <h4>Publishing a Schedule</h4>
+    <ol class="step-list">
+        <li>Navigate to <strong>Manage Schedules</strong></li>
+        <li>Select the unpublished schedule</li>
+        <li>Review all shifts to ensure accuracy</li>
+        <li>Click <strong>Publish</strong></li>
+    </ol>
+    
+    <p>Once published, the schedule becomes visible to all student workers.</p>
+    
+    <h3 id="manage-shifts">3.4 Managing Shifts</h3>
+    
+    <h4>Adding Shifts - Method 1: Calendar View</h4>
+    <ol class="step-list">
+        <li>From the main menu, locate the day you want to add a shift</li>
+        <li>Click on the day column in the calendar</li>
+        <li>The system will navigate to the shift creation page with the date pre-selected</li>
+        <li>Select the <strong>Worker</strong> from the dropdown</li>
+        <li>Select the <strong>Workstation</strong> from the dropdown</li>
+        <li>Choose <strong>Start Time</strong> (8:00 AM - 5:00 PM)</li>
+        <li>Choose <strong>End Time</strong> (must be after start time)</li>
+        <li>Click <strong>Add Shift</strong></li>
+    </ol>
+    
+    <h4>Adding Shifts - Method 2: Navigation Menu</h4>
+    <ol class="step-list">
+        <li>Click <strong>Create New Shift</strong> in the navigation menu</li>
+        <li>Select the shift <strong>Date</strong></li>
+        <li>Select the <strong>Worker</strong>, <strong>Workstation</strong>, and <strong>Times</strong></li>
+        <li>Click <strong>Add Shift</strong></li>
+    </ol>
+    
+    <h4>Editing a Shift</h4>
+    <ol class="step-list">
+        <li>Click on a shift block in the calendar</li>
+        <li>Modify the worker, workstation, or time fields</li>
+        <li>Click <strong>Save</strong> to apply changes</li>
+    </ol>
+    
+    <h4>Deleting a Shift</h4>
+    <ol class="step-list">
+        <li>Click on the shift block in the calendar</li>
+        <li>Click the <strong>Delete</strong> button</li>
+        <li>Confirm the deletion in the dialog box</li>
+    </ol>
+    
+    <h2 id="student-features">4. Student Worker Features</h2>
+    
+    <h3>Viewing Your Schedule</h3>
+    <p>The main calendar displays the current week's schedule. Your assigned shifts appear as colored blocks in the calendar.</p>
+    
+    <ul>
+        <li>Use the <strong>arrow buttons</strong> to navigate between weeks</li>
+        <li>Click on a shift to view details</li>
+        <li>The <strong>color legend</strong> at the bottom shows which color represents each workstation</li>
+    </ul>
+    
+    <h3>Requesting Shifts</h3>
+    <ol class="step-list">
+        <li>Click <strong>Request New Shift</strong> in the navigation menu</li>
+        <li>Select your desired date, workstation, and time</li>
+        <li>Click <strong>Add Shift</strong></li>
+    </ol>
+    
+    <div class="note">
+        <strong>Note:</strong> Non-admin users can only create shifts for themselves.
+    </div>
+    
+    <h3>Understanding Your Seniority</h3>
+    <p>Your seniority is automatically calculated based on your hire date:</p>
+    <ul>
+        <li><strong>Lower number = Higher seniority</strong></li>
+        <li>Senior workers can override junior workers' shifts (when workstation alternatives exist)</li>
+        <li>You'll be notified when attempting to override another worker's shift</li>
+    </ul>
+    
+    <h3>Changing Your Password</h3>
+    <ol class="step-list">
+        <li>Click <strong>Change Password</strong> in the navigation menu</li>
+        <li>Enter your <strong>current password</strong></li>
+        <li>Enter your <strong>new password</strong></li>
+        <li>Re-enter your <strong>new password</strong> to confirm</li>
+        <li>Click <strong>Change Password</strong></li>
+    </ol>
+    
+    <h2 id="seniority-system">5. Seniority and Override System</h2>
+    
+    <h3>How Seniority Works</h3>
+    <table>
+        <tr>
+            <th>Aspect</th>
+            <th>Details</th>
+        </tr>
+        <tr>
+            <td><strong>Calculation</strong></td>
+            <td>Automatically calculated based on hire date</td>
+        </tr>
+        <tr>
+            <td><strong>Ranking</strong></td>
+            <td>Lower number = higher seniority (e.g., 1 is most senior)</td>
+        </tr>
+        <tr>
+            <td><strong>Updates</strong></td>
+            <td>Recalculated when workers are added or removed</td>
+        </tr>
+        <tr>
+            <td><strong>Managers</strong></td>
+            <td>Assigned seniority number 0 (highest)</td>
+        </tr>
+    </table>
+    
+    <h3>Senior Worker Override</h3>
+    <p>When a senior worker requests a workstation occupied by a junior worker:</p>
+    
+    <ol class="step-list">
+        <li>System checks if an alternative workstation is available</li>
+        <li>If available, a <strong>confirmation dialog</strong> appears</li>
+        <li>Dialog explains that the junior worker will be reassigned</li>
+        <li>Senior worker clicks <strong>Override</strong> to confirm</li>
+        <li>Junior worker is automatically moved to the available workstation</li>
+        <li>Senior worker gets the requested workstation</li>
+    </ol>
+    
+    <div class="warning">
+        <strong>Limitation:</strong> Senior override only works when there's at least one other available workstation. If no alternatives exist, the override is blocked.
+    </div>
+    
+    <h3>Admin Override</h3>
+    <p>Administrators have special override privileges with two scenarios:</p>
+    
+    <h4>Scenario 1: Alternative Workstation Available</h4>
+    <div class="tip">
+        <strong>Outcome:</strong> The conflicting worker is automatically reassigned to the available workstation. Both shifts remain active.
+    </div>
+    
+    <h4>Scenario 2: No Alternative Workstation</h4>
+    <div class="warning">
+        <strong>Warning:</strong> The admin receives a clear warning that the conflicting worker's shift will be DELETED. The admin must explicitly confirm this action.
+    </div>
+    
+    <h2 id="validation-rules">6. Validation Rules</h2>
+    
+    <h3>Shift Creation Rules</h3>
+    <table>
+        <tr>
+            <th>Rule</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> Time Validation</td>
+            <td>Start time must be before end time</td>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> Operating Hours</td>
+            <td>Shifts must be between 8:00 AM and 5:00 PM</td>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> No Double-Booking</td>
+            <td>Worker cannot have overlapping shifts</td>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> Max Hours Check</td>
+            <td>Student workers cannot exceed weekly max hours (default: 20)</td>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> Workstation Conflict</td>
+            <td>Each workstation can only have one shift at a time (unless overridden)</td>
+        </tr>
+    </table>
+    
+    <h3>Schedule Management Rules</h3>
+    <table>
+        <tr>
+            <th>Rule</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> Schedule Limit</td>
+            <td>Maximum 1 published schedule at a time</td>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> Unpublished Limit</td>
+            <td>Maximum 1 unpublished schedule at a time</td>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> Date Range</td>
+            <td>Must start on Monday and end on Friday</td>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> Date Order</td>
+            <td>End date must be after start date</td>
+        </tr>
+    </table>
+    
+    <h3>User Management Rules</h3>
+    <table>
+        <tr>
+            <th>Rule</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> Unique Username</td>
+            <td>Each username must be unique in the system</td>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> Unique Email</td>
+            <td>Each email must be unique in the system</td>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> Hire Date</td>
+            <td>Determines seniority ranking</td>
+        </tr>
+        <tr>
+            <td><span class="checkmark">✓</span> Max Hours</td>
+            <td>Must be a positive number</td>
+        </tr>
+    </table>
+    
+    <h2 id="troubleshooting">7. Troubleshooting</h2>
+    
+    <h3>Common Issues and Solutions</h3>
+    
+    <h4>Problem: Cannot Create Schedule</h4>
+    <p><strong>Possible Causes:</strong></p>
+    <ul>
+        <li>Already have 1 published + 1 unpublished schedule</li>
+        <li>Selected dates don't start on Monday or end on Friday</li>
+    </ul>
+    <p><strong>Solution:</strong> Delete expired schedules or adjust your date selection.</p>
+    
+    <h4>Problem: Worker Double-Booked Error</h4>
+    <p><strong>Cause:</strong> The selected worker already has a shift at that time.</p>
+    <p><strong>Solution:</strong> Choose a different time slot or different worker.</p>
+    
+    <h4>Problem: Workstation Occupied</h4>
+    <p><strong>Cause:</strong> Another worker is assigned to this workstation at the selected time.</p>
+    <p><strong>Solutions:</strong></p>
+    <ul>
+        <li>Choose a different workstation</li>
+        <li>Choose a different time</li>
+        <li>If you have seniority or admin privileges, use the override feature</li>
+    </ul>
+    
+    <h4>Problem: Max Hours Exceeded</h4>
+    <p><strong>Cause:</strong> Adding this shift would cause the student worker to exceed their weekly hour limit.</p>
+    <p><strong>Solutions:</strong></p>
+    <ul>
+        <li>Reduce the shift duration</li>
+        <li>Choose another worker</li>
+        <li>Admin: Increase the worker's max hours if appropriate</li>
+    </ul>
+    
+    <h4>Problem: Cannot Delete User/Workstation</h4>
+    <p><strong>Cause:</strong> Database connection issue or constraint violation.</p>
+    <p><strong>Solution:</strong> The system automatically handles cascade deletion. If errors persist, contact technical support.</p>
+    
+    <h3>Tips for Best Results</h3>
+    
+    <div class="tip">
+        <strong>Tip:</strong> Always review the calendar after making changes to verify shifts were created correctly.
+    </div>
+    
+    <div class="tip">
+        <strong>Tip:</strong> Use the color legend at the bottom of the calendar to quickly identify which workstation each shift represents.
+    </div>
+    
+    <div class="tip">
+        <strong>Tip:</strong> Download PDF schedules regularly for backup and distribution to workers without system access.
+    </div>
+    
+    <div class="tip">
+        <strong>Tip:</strong> Delete old schedules regularly to keep the system clean and prevent hitting schedule limits.
+    </div>
+    
+    <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
+    
+    <p style="text-align: center; color: #666; margin-top: 40px;">
+        <strong>ShiftLift User Guide</strong><br>
+        For additional support, contact your system administrator or development team.
+    </p>
+    
+    <p class="no-print" style="text-align: center; margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+        <strong>To save as PDF:</strong> Press Ctrl+P (Windows) or Cmd+P (Mac), then select "Save as PDF" as the printer option.
+    </p>
+</body>
+</html>
