@@ -55,6 +55,11 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
     private UserService userService;
 
 
+    /**
+     * Constructs the new worker view with form fields for creating new users.
+     * Initializes the layout with email, password, role selection, and max hours fields.
+     * Shows/hides max hours combo box based on role selection.
+     */
     public NewWorkerView() {
         
       
@@ -108,7 +113,6 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
         textSmall.setWidth("100%");
         textSmall.getStyle().set("font-size", "var(--lumo-font-size-xs)");
         layoutColumn5.getStyle().set("flex-grow", "1");
-    // Title for topBar
     H2 topTitle = new H2("Adding New Worker");
     topTitle.getStyle()
            .set("color", "#156fabff")
@@ -116,14 +120,12 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
            .set("margin", "0")
            .set("font-size", "24px");
 
-    // Add a top bar with title and logout button
     Button logoutBtn = new Button("Logout");
     logoutBtn.getStyle().set("color", "#666666");
     logoutBtn.addClickListener(e -> Auth.logoutToLogin());
     
-    // Create spacer to center the title
     VerticalLayout spacer = new VerticalLayout();
-    spacer.setWidth("120px"); // Match approximate logout button width
+    spacer.setWidth("120px");
     
     HorizontalLayout topBar = new HorizontalLayout(spacer, topTitle, logoutBtn);
     topBar.setWidthFull();
@@ -160,7 +162,6 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
         maxHoursComboBox.setWidth("min-content");
         layoutColumn3.add(maxHoursComboBox);
         
-        // Show/hide max hours combo box based on role selection
         roleSelector.addValueChangeListener(e -> {
             maxHoursComboBox.setVisible("Student".equals(e.getValue()));
         });
@@ -181,6 +182,12 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
         });
     }
 
+    /**
+     * Validates user authentication before allowing access to the view.
+     * Checks for admin access and redirects to login if unauthorized.
+     * 
+     * @param event navigation event containing routing information
+     */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         if (!Auth.isLoggedIn() || !Auth.isAdmin()) {
@@ -189,6 +196,11 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
         }
     }
 
+    /**
+     * Handles create button click by validating input and creating new user account.
+     * Creates StudentWorker or ManagerUser based on role selection with appropriate max hours.
+     * Clears form and navigates to user list on success.
+     */
     private void create_button_click_listener() {
         
         try {
@@ -199,13 +211,11 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
             }else{
                 if(newWorkerPassword.getValue().equals(passwordField.getValue()))
                 {
-                    //Add new student worker to database
                     try {
                         if ("Manager".equals(roleSelector.getValue())) {
                             userService.createManagerUser(emailField.getValue().toLowerCase(), passwordField.getValue());
                         } else {
-                            // Parse max hours from combo box selection
-                            int maxHours = 20; // default
+                            int maxHours = 20;
                             String maxHoursSelection = maxHoursComboBox.getValue();
                             if (maxHoursSelection != null) {
                                 if (maxHoursSelection.contains("25")) {
@@ -228,7 +238,6 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
                     emailField.clear();
                     passwordField.clear();
                     newWorkerPassword.clear();
-                    //textSmall.setText("New worker account created successfully!");
                     UI.getCurrent().navigate("list-users");
                 }
                 else{
@@ -248,6 +257,9 @@ public class NewWorkerView extends Composite<VerticalLayout> implements BeforeEn
         }
     }
 
+    /**
+     * Handles cancel button click by clearing all form fields and navigating back to user list.
+     */
     private void cancel_button_click_listener() {
         emailField.clear();
         passwordField.clear();

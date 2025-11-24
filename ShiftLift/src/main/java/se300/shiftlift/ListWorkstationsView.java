@@ -46,7 +46,10 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
     private String currentQuery = "";
     private Button selectedItem = null;
 
-
+    /**
+     * Constructs the workstation management view with search, pagination, and navigation.
+     * Initializes the layout with drawer menu, header, and workstation list display.
+     */
     public ListWorkstationsView(WorkstationService workstatioService, ScheduleService scheduleService)
     {
         this.workstationService = workstatioService;
@@ -54,63 +57,53 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
         
         boolean admin = Auth.isAdmin();
         
-        // Create styled drawer menu
         VerticalLayout drawerLayout = new VerticalLayout();
         drawerLayout.setPadding(true);
         drawerLayout.setSpacing(true);
         
         if(admin){
-            // Routes that will be in the hamburger for navigation
             RouterLink viewPendingScheduleLink = new RouterLink("View Pending Schedule", MainMenuView.class);
             RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
             RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
             RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
-            // Apply styling to each link
             styleRouterLink(viewPendingScheduleLink);
             styleRouterLink(viewPublishedScheduleLink);
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
             styleRouterLink(manageSchedulesLink);
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, downloadPdfButton, changePasswordLink);
         }
         else{
             RouterLink viewPendingScheduleLink = new RouterLink("View Pending Schedule", MainMenuView.class);
             RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
             styleRouterLink(viewPendingScheduleLink);
             styleRouterLink(viewPublishedScheduleLink);
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, downloadPdfButton, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
         
-        // Set drawer closed by default
         setDrawerOpened(false);
 
-        // Creates a hamburger for navigation to other tabs
         DrawerToggle toggle = new DrawerToggle();
         toggle.getStyle()
             .set("color", "#156fabff")
             .set("background-color", "#f5f5f5")
             .set("border-radius", "4px");
 
-        // Logout Button
         Button logoutButton = new Button("Logout");
         logoutButton.getStyle()
             .set("color", "#666666")
@@ -118,7 +111,6 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
             .set("margin-right", "20px");
         logoutButton.addClickListener(e -> Auth.logoutToLogin());
 
-        // Navbar layout (this is the header)
         var header = new HorizontalLayout(toggle, logoutButton);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
@@ -129,7 +121,6 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
             .set("background-color", "white")
             .set("padding", "16px 20px");
         
-        // Add title to navbar
         H2 navTitle = new H2("Workstations");
         navTitle.getStyle()
                .set("color", "#156fabff")
@@ -137,12 +128,10 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
                .set("margin", "0")
                .set("font-size", "24px");
         
-        // Update header to include title
         header.removeAll();
         header.add(toggle, navTitle, logoutButton);
         addToNavbar(header);
         
-        //Search field
         searchField.setPlaceholder("Search workstations...");
         searchField.setClearButtonVisible(true);
         searchField.setWidth("400");
@@ -153,11 +142,9 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
             loadWorkstations(currentQuery, currentPage);
         });
 
-        //Navigation buttons
         Button newWorkstationButton = new Button("Create New Workstation");
         Button returnButton = new Button("Return");
 
-        //Set button styles
         prevButton.getStyle().set("font-family", "Poppins, sans-serif");
         nextButton.getStyle().set("font-family", "Poppins, sans-serif");
         editButton.getStyle()
@@ -174,11 +161,9 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
             .set("font-family", "Poppins, sans-serif")
             .set("color", "grey");
         
-        //Navigation button handlers
         newWorkstationButton.addClickListener(e -> UI.getCurrent().navigate("new-workstation"));
         returnButton.addClickListener(e -> UI.getCurrent().navigate(MainMenuView.class));
 
-        //User url parameter to pass workstation name to edit workstaion view
         editButton.addClickListener(e ->{
             if(selectedItem != null) {
                 String workstationName = selectedItem.getElement().getProperty("_workstation");
@@ -189,7 +174,6 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
             }
         });
 
-        //Add Search layout at the top with page navigation buttons
         HorizontalLayout searchLayout = new HorizontalLayout(searchField);
         searchLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         searchLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
@@ -208,35 +192,30 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
             loadWorkstations(currentQuery, currentPage);
         });
 
-        //Set list layout styling
         listLayout.setWidth("600px");
         listLayout.setPadding(false);
         listLayout.setSpacing(true);
         listLayout.setAlignItems(FlexComponent.Alignment.START);
         listLayout.getStyle()
-            .set("gap", "6px")  // Minimal gap between rows
+            .set("gap", "6px")
             .set("margin-top", "16px");
 
-        //Create page navigation layout
         HorizontalLayout pageLayout = new HorizontalLayout(prevButton, nextButton);
         pageLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         pageLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
         pageLayout.setSpacing(true);
 
-        //Create buttons layout
         HorizontalLayout buttonLayout = new HorizontalLayout(newWorkstationButton, editButton, returnButton);
         buttonLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
         buttonLayout.setSpacing(true);
 
-        //Create Navigation layout for buttons set at bottom
         VerticalLayout bottomLayout = new VerticalLayout(pageLayout, buttonLayout);
         bottomLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         bottomLayout.setSpacing(true);
         bottomLayout.setPadding(true);
         bottomLayout.getStyle().set("margin-top", "24px");
 
-        //Backgorund div for to allow for deselection of items
         Div backgroundDiv = new Div();
         backgroundDiv.setSizeFull();
         backgroundDiv.getStyle()
@@ -253,19 +232,21 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
             }
         });
 
-        //Create main content container
         VerticalLayout contentLayout = new VerticalLayout(searchLayout, listLayout, bottomLayout);
         contentLayout.setSizeFull();
         contentLayout.setSpacing(true);
         contentLayout.setPadding(true);
         contentLayout.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        // Set content for AppLayout
         setContent(contentLayout);
 
         loadWorkstations(currentQuery, currentPage);
     }
     
+    /**
+     * Applies ShiftLift styling to navigation drawer links.
+     * Sets blue color and Poppins font with proper spacing.
+     */
     private void styleRouterLink(RouterLink link) {
         link.getStyle()
             .set("color", "#156fabff")
@@ -284,11 +265,14 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
         }
     }
     
+    /**
+     * Loads and displays workstations based on search query and pagination.
+     * Fetches workstations from the service and renders them as interactive list items.
+     */
     private void loadWorkstations(String query, int page)
     {
         listLayout.removeAll();
         Slice<Workstation> slice;
-        //Fetch workstations from database based on search query
         if(query == null || query.isEmpty())
         {
             slice = workstationService.searchByName("", PageRequest.of(page, 20));
@@ -298,13 +282,12 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
 
         List<Workstation> workstations = slice.toList();
         
-        //For each workstation create a button item in the list
         for(Workstation ws : workstations)
         {
             VerticalLayout workstationInfo = new VerticalLayout();
             workstationInfo.setSpacing(false);
             workstationInfo.setPadding(false);
-            workstationInfo.setSizeFull(); // Take full available space in the row
+            workstationInfo.setSizeFull();
             workstationInfo.setAlignItems(FlexComponent.Alignment.START);
             workstationInfo.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
 
@@ -324,34 +307,33 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
 
             workstationInfo.add(nameSpan, hoursSpan);
 
-            // Create a horizontal row layout for proper styling
             HorizontalLayout row = new HorizontalLayout(workstationInfo);
-            row.setWidth("560px"); // Slightly narrower than container
-            row.setAlignItems(FlexComponent.Alignment.CENTER); // Vertically center all components
-            row.setHeight("80px"); // Match ManageSchedulesView height
+            row.setWidth("560px");
+            row.setAlignItems(FlexComponent.Alignment.CENTER);
+            row.setHeight("80px");
             row.setJustifyContentMode(FlexComponent.JustifyContentMode.START);
             row.expand(workstationInfo);
             row.getStyle()
-                .set("padding", "10px 24px")  // Padding to fit within button
+                .set("padding", "10px 24px")
                 .set("border-radius", "8px")
-                .set("margin", "0")  // Remove margin to prevent overflow
-                .set("height", "80px") // Match ManageSchedulesView height
-                .set("max-height", "80px") // Prevent expansion beyond button
+                .set("margin", "0")
+                .set("height", "80px")
+                .set("max-height", "80px")
                 .set("display", "flex")
-                .set("align-items", "center") // Ensure CSS flex centering
-                .set("box-sizing", "border-box"); // Include padding in height calculation
+                .set("align-items", "center")
+                .set("box-sizing", "border-box");
 
             Button item = new Button(row);
             item.getStyle()
                 .set("width", "100%")
-                .set("height", "80px") // Match ManageSchedulesView height
+                .set("height", "80px")
                 .set("text-align", "left")
                 .set("padding", "0")
                 .set("background", "white")
                 .set("cursor", "pointer")
                 .set("border", "none")
-                .set("margin", "0 auto") // Center the narrower row in container
-                .set("overflow", "hidden") // Prevent content from sticking out
+                .set("margin", "0 auto")
+                .set("overflow", "hidden")
                 .set("display", "flex")
                 .set("align-items", "center")
                 .set("justify-content", "center")
@@ -359,13 +341,11 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
             
             item.addClickListener(e -> {
                 if(selectedItem == item){
-                    //Deselect if already selected
                     deselectWorkstation(selectedItem);
                     selectedItem = null;
                     editButton.setEnabled(false);
                     editButton.getStyle().set("opacity", "0.5");
                 }else{
-                    //Select the workstation
                     if(selectedItem != null) {
                         deselectWorkstation(selectedItem);
                     }
@@ -374,30 +354,29 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
                     editButton.setEnabled(true);
                     editButton.getStyle().set("opacity", "1");
                 }
-                e.getSource().getElement().executeJs("event.stopPropagation()"); //Force this action handler to run before background click
+                e.getSource().getElement().executeJs("event.stopPropagation()");
             });
-            //Store workstaion name in element property for retrieval on edit
             item.getElement().setProperty("_workstation", ws.getName());
             listLayout.add(item);
         }
 
-        //Enable/disable navigation buttons dynamically based on database slice info
         prevButton.setEnabled(slice.hasPrevious());
         nextButton.setEnabled(slice.hasNext());
     }
 
+    /**
+     * Applies selection styling to a workstation list item.
+     * Sets ShiftLift blue background with yellow border and changes text to white.
+     */
     private void selectWorkstation(Button workstationButton) {
-        // Apply ShiftLift blue background and yellow border
         workstationButton.getStyle()
             .set("background-color", "#156fabff")
             .set("border", "3px solid #ffc107");
         
-        // Change text colors to white
         HorizontalLayout row = (HorizontalLayout) workstationButton.getChildren().findFirst().orElse(null);
         if (row != null) {
             row.getChildren().forEach(component -> {
                 if (component instanceof VerticalLayout) {
-                    // Change workstation name and hours text to white
                     VerticalLayout workstationInfo = (VerticalLayout) component;
                     workstationInfo.getChildren().forEach(textComponent -> {
                         if (textComponent instanceof Span) {
@@ -409,29 +388,27 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
         }
     }
 
+    /**
+     * Removes selection styling from a workstation list item.
+     * Resets background, border, and text colors to original state.
+     */
     private void deselectWorkstation(Button workstationButton) {
-        // Reset background and border
         workstationButton.getStyle()
             .set("background-color", "white")
             .set("border", "none");
         
-        // Reset text colors to original
         HorizontalLayout row = (HorizontalLayout) workstationButton.getChildren().findFirst().orElse(null);
         if (row != null) {
             row.getChildren().forEach(component -> {
                 if (component instanceof VerticalLayout) {
-                    // Reset workstation name and hours text colors
                     VerticalLayout workstationInfo = (VerticalLayout) component;
                     workstationInfo.getChildren().forEach(textComponent -> {
                         if (textComponent instanceof Span) {
                             Span span = (Span) textComponent;
-                            // Restore original colors based on content
                             String text = span.getText();
                             if (text.contains("Not Set") || text.contains(":")) {
-                                // Hours - grey color
                                 span.getStyle().set("color", "#666666");
                             } else {
-                                // Workstation name - dark color
                                 span.getStyle().set("color", "#00070cff");
                             }
                         }
@@ -441,6 +418,10 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
         }
     }
     
+    /**
+     * Creates a button for downloading the published schedule as a PDF.
+     * Fetches the latest published schedule and generates a PDF document.
+     */
     private Button createDownloadPdfButton() {
         Button downloadButton = new Button("Download PDF");
         downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -454,7 +435,6 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
         
         downloadButton.addClickListener(e -> {
             try {
-                // Find the latest published schedule
                 List<Schedule> allSchedules = scheduleService.getAllSchedules();
                 java.util.Optional<Schedule> latestPublished = allSchedules.stream()
                     .filter(s -> s.getApproved() != null && s.getApproved())
@@ -470,12 +450,10 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
                 Schedule schedule = latestPublished.get();
                 scheduleService.loadShiftsForSchedule(schedule);
                 
-                // Generate PDF to temporary file
                 String tempDir = System.getProperty("java.io.tmpdir");
                 String pdfPath = tempDir + "/schedule-" + schedule.getId() + ".pdf";
                 SchedulePdfGenerator.generateSchedulePdf(schedule, pdfPath);
                 
-                // Trigger download
                 java.io.File pdfFile = new java.io.File(pdfPath);
                 com.vaadin.flow.server.StreamResource resource = 
                     new com.vaadin.flow.server.StreamResource("schedule.pdf", 

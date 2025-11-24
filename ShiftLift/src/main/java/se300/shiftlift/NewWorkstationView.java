@@ -26,7 +26,6 @@ import jakarta.annotation.security.RolesAllowed;
 @RolesAllowed("ADMIN")
 public class NewWorkstationView extends Composite<VerticalLayout> implements BeforeEnterObserver 
 {   
-    //Flow Components
     private final HorizontalLayout layoutRow3 = new HorizontalLayout();
     private final HorizontalLayout layoutRow5 = new HorizontalLayout();
     private final VerticalLayout layoutColumn5 = new VerticalLayout();
@@ -49,14 +48,24 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
     private boolean dirty = false;
     private final WorkstationService workstationService;
   
-
-
+    /**
+     * Constructs a new workstation view for creating or editing workstations.
+     * Initializes the workstation service and creates the UI elements.
+     * 
+     * @param workstationService the service for managing workstation persistence
+     */
     public NewWorkstationView(WorkstationService workstationService)
     {
         this.workstationService = workstationService;
         create_elements();
     }
 
+    /**
+     * Validates admin authentication before allowing access to the view.
+     * Redirects non-admin users to the login page.
+     * 
+     * @param event the navigation event containing routing information
+     */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         if (!Auth.isLoggedIn() || !Auth.isAdmin()) {
@@ -66,8 +75,10 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
         }
     }
 
-   
-
+    /**
+     * Creates and configures all UI elements for the workstation form.
+     * Sets up the layout, input fields, time dropdowns, and action buttons.
+     */
     private  void create_elements()
     {
         getContent().setWidth("100%");
@@ -86,7 +97,6 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
         h12.setText("Edit Workstation Data");
         h12.setWidth("max-content");
         h12.getStyle().set("font-family", "Poppins, sans-serif");
-        // Shiftlift blue title color
         h12.getStyle().set("color", "#156fabff");
         layoutRow6.setWidthFull();
         layoutRow6.addClassName(Gap.MEDIUM);
@@ -101,23 +111,21 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
         nameTextField.setErrorMessage("Please enter a valid workstation name");
         nameTextField.setClearButtonVisible(true);
         
-        // Setup opening time dropdown
         openingTimeComboBox.setLabel("Opening Time:");
         layoutColumn3.setAlignSelf(FlexComponent.Alignment.CENTER, openingTimeComboBox);
         openingTimeComboBox.setWidth("min-content");
         openingTimeComboBox.setAllowCustomValue(true);
         openingTimeComboBox.setItems(generateTimeOptions());
         openingTimeComboBox.setPlaceholder("Select opening time");
-        openingTimeComboBox.setValue(formatTimeForDisplay(Time.OPENING_TIME)); // Default to opening time from Time class
+        openingTimeComboBox.setValue(formatTimeForDisplay(Time.OPENING_TIME));
         
-        // Setup closing time dropdown
         closingTimeComboBox.setLabel("Closing Time:");
         layoutColumn3.setAlignSelf(FlexComponent.Alignment.CENTER, closingTimeComboBox);
         closingTimeComboBox.setWidth("min-content");
         closingTimeComboBox.setAllowCustomValue(true);
         closingTimeComboBox.setItems(generateTimeOptions());
         closingTimeComboBox.setPlaceholder("Select closing time");
-        closingTimeComboBox.setValue(formatTimeForDisplay(Time.CLOSING_TIME)); // Default to closing time from Time class
+        closingTimeComboBox.setValue(formatTimeForDisplay(Time.CLOSING_TIME));
         layoutRow7.setWidthFull();
         layoutRowButtons.setWidthFull();
         layoutColumn3.setFlexGrow(1.0, layoutRow7);
@@ -148,7 +156,6 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
         layoutRow8.addClassName(Gap.MEDIUM);
         layoutRow8.setWidth("100%");
         layoutRow8.setHeight("min-content");
-        // Add a right-aligned top bar for Logout at the very top (to match MainMenu)
         Button logoutBtn = new Button("Logout");
         logoutBtn.getStyle().set("color", "#666666");
         logoutBtn.addClickListener(e -> Auth.logoutToLogin());
@@ -165,7 +172,6 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
         getContent().add(layoutRow5);
         layoutRow5.add(layoutColumn5);
         layoutRow5.add(layoutColumn7);
-        // keep title centered and with consistent bottom margin
         h12.getStyle().set("margin", "0 0 24px 0");
         layoutColumn7.add(h12);
         layoutColumn7.add(layoutRow6);
@@ -182,15 +188,28 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
         getContent().add(layoutRow8);
     }
 
+    /**
+     * Formats an integer time value to a display string.
+     * 
+     * @param time the time value (e.g., 800 for 8:00, 1730 for 17:30)
+     * @return the formatted time string in HH:mm format
+     */
     private String formatTimeForDisplay(int time) {
         int hours = time / 100;
         int minutes = time % 100;
         return String.format("%02d:%02d", hours, minutes);
     }
 
+    /**
+     * Parses a time string into an integer time value.
+     * Returns the default opening time if the string is null or empty.
+     * 
+     * @param timeStr the time string in HH:mm format
+     * @return the integer time value (e.g., 800 for 8:00)
+     */
     private int parseTimeFromString(String timeStr) {
         if (timeStr == null || timeStr.isEmpty()) {
-            return Time.OPENING_TIME; // Default to opening time from Time class
+            return Time.OPENING_TIME;
         }
         String[] parts = timeStr.split(":");
         int hours = Integer.parseInt(parts[0]);
@@ -198,23 +217,33 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
         return hours * 100 + minutes;
     }
 
+    /**
+     * Generates a list of time options for the time selection dropdowns.
+     * Creates 30-minute intervals between opening and closing times.
+     * 
+     * @return list of time strings in HH:mm format
+     */
     private java.util.List<String> generateTimeOptions() {
         java.util.List<String> timeOptions = new java.util.ArrayList<>();
-        // Generate times based on Time class constants (OPENING_TIME to CLOSING_TIME) in 30-minute intervals
-        int startHour = Time.OPENING_TIME / 100; // Extract hour from OPENING_TIME (800 -> 8)
-        int endHour = Time.CLOSING_TIME / 100;   // Extract hour from CLOSING_TIME (1700 -> 17)
+        int startHour = Time.OPENING_TIME / 100;
+        int endHour = Time.CLOSING_TIME / 100;
         
         for (int hour = startHour; hour <= endHour; hour++) {
             timeOptions.add(String.format("%02d:00", hour));
-            if (hour < endHour) { // Don't add half-hour past closing time
+            if (hour < endHour) {
                 timeOptions.add(String.format("%02d:30", hour));
             }
         }
         return timeOptions;
     }
 
+    /**
+     * Validates all form fields for completeness and logical consistency.
+     * Checks workstation name, opening time, closing time, and time range validity.
+     * 
+     * @return true if all fields are valid, false otherwise
+     */
     private boolean validateFields() {
-        // Implement field validation logic here
         if(nameTextField.isEmpty() || nameTextField.getValue().trim().isEmpty()) {
             nameTextField.setErrorMessage("Workstation name cannot be empty");
             nameTextField.setInvalid(true);
@@ -233,7 +262,6 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
             return false;
         }
         
-        // Validate time range
         try {
             int openingTime = parseTimeFromString(openingTimeComboBox.getValue());
             int closingTime = parseTimeFromString(closingTimeComboBox.getValue());
@@ -259,6 +287,10 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
         return true;
     }
 
+    /**
+     * Handles the save button click to create or update a workstation.
+     * Validates fields, parses time values, and persists the workstation.
+     */
     private void create_button_click_listener() 
     {
         if(validateFields()) {
@@ -266,32 +298,26 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
                 try {
                     workstation.setName(nameTextField.getValue().trim());
                     
-                    // Set operation hours
                     int openingTime = parseTimeFromString(openingTimeComboBox.getValue());
                     int closingTime = parseTimeFromString(closingTimeComboBox.getValue());
                     
-                    // Create new Time object with the specified hours
                     workstation.setOperation_hours(new Time(openingTime, closingTime));
                     
                     workstationService.save(workstation);
                     dirty = false;
                     Notification.show("Workstation saved", 2000, Notification.Position.BOTTOM_START);
-                    // Navigate back to workstation list after successful save
                     UI.getCurrent().navigate("list-workstations");
                 } catch (Exception e) {
                     Notification.show("Error saving workstation: " + e.getMessage(), 
                         3000, Notification.Position.MIDDLE);
                 }
             } else {
-                // Creating new workstation
                 try {
                     workstation = new Workstation(nameTextField.getValue().trim());
                     
-                    // Set operation hours for new workstation
                     int openingTime = parseTimeFromString(openingTimeComboBox.getValue());
                     int closingTime = parseTimeFromString(closingTimeComboBox.getValue());
                     
-                    // Create new Time object with the specified hours
                     workstation.setOperation_hours(new Time(openingTime, closingTime));
                     
                     workstationService.save(workstation);
@@ -306,9 +332,12 @@ public class NewWorkstationView extends Composite<VerticalLayout> implements Bef
         }   
     }
 
+    /**
+     * Handles the cancel button click to abort workstation creation/editing.
+     * Clears the dirty flag and navigates back to the workstation list.
+     */
     private void cancel_button_click_listener() 
     {
-        // Clear dirty flag and navigate back
         dirty = false;
         UI.getCurrent().navigate("list-workstations");
     }

@@ -41,7 +41,6 @@ public class HoursReportPdfGenerator {
         }
 
         try (PDDocument document = new PDDocument()) {
-            // Ensure weeks are generated and shifts are organized
             schedule.generateWeeks();
             schedule.organizeShiftsIntoWeeks();
 
@@ -51,28 +50,22 @@ public class HoursReportPdfGenerator {
                 throw new IllegalArgumentException("Schedule has no weeks to report");
             }
 
-            // Create first page with title
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
             
             PDPageContentStream contentStream = new PDPageContentStream(document, page);
             float yPosition = PDRectangle.A4.getHeight() - MARGIN;
             
-            // Draw main title
             yPosition = drawMainTitle(contentStream, yPosition);
             yPosition -= 20;
             
-            // Process each week
             for (int i = 0; i < weeks.size(); i++) {
                 Week week = weeks.get(i);
                 
-                // Calculate total hours per user for this week
                 Map<String, Float> userHours = calculateUserHours(week);
                 
-                // Calculate space needed for this week's table
-                float spaceNeeded = 80 + (userHours.size() * ROW_HEIGHT); // Header + rows
+                float spaceNeeded = 80 + (userHours.size() * ROW_HEIGHT);
                 
-                // Check if we need a new page
                 if (yPosition - spaceNeeded < MARGIN) {
                     contentStream.close();
                     page = new PDPage(PDRectangle.A4);
@@ -81,9 +74,8 @@ public class HoursReportPdfGenerator {
                     yPosition = PDRectangle.A4.getHeight() - MARGIN;
                 }
                 
-                // Draw week section
                 yPosition = drawWeekSection(contentStream, week, i + 1, userHours, yPosition);
-                yPosition -= 30; // Space between weeks
+                yPosition -= 30;
             }
             
             contentStream.close();
@@ -95,7 +87,7 @@ public class HoursReportPdfGenerator {
      * Draws the main title of the report.
      */
     private static float drawMainTitle(PDPageContentStream cs, float yPosition) throws IOException {
-        cs.setNonStrokingColor(new Color(21, 111, 171)); // Blue color
+        cs.setNonStrokingColor(new Color(21, 111, 171));
         cs.beginText();
         cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), TITLE_FONT_SIZE);
         cs.newLineAtOffset(MARGIN, yPosition);
@@ -105,7 +97,6 @@ public class HoursReportPdfGenerator {
         
         yPosition -= 30;
         
-        // Draw separator line
         cs.setStrokingColor(new Color(21, 111, 171));
         cs.setLineWidth(2);
         cs.moveTo(MARGIN, yPosition);
@@ -124,7 +115,6 @@ public class HoursReportPdfGenerator {
                                          Map<String, Float> userHours, float yPosition) throws IOException {
         float pageWidth = PDRectangle.A4.getWidth();
         
-        // Draw week header
         cs.setNonStrokingColor(new Color(21, 111, 171));
         cs.beginText();
         cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), WEEK_HEADER_FONT_SIZE);
@@ -135,7 +125,6 @@ public class HoursReportPdfGenerator {
         
         yPosition -= 30;
         
-        // Draw table header
         cs.setNonStrokingColor(new Color(21, 111, 171));
         cs.addRect(MARGIN, yPosition - ROW_HEIGHT, pageWidth - (2 * MARGIN), ROW_HEIGHT);
         cs.fill();
@@ -156,16 +145,13 @@ public class HoursReportPdfGenerator {
         
         yPosition -= ROW_HEIGHT;
         
-        // Sort users by name
         List<Map.Entry<String, Float>> sortedUsers = new ArrayList<>(userHours.entrySet());
         sortedUsers.sort(Map.Entry.comparingByKey());
         
-        // Draw user rows
         boolean alternateRow = false;
         float totalHours = 0f;
         
         for (Map.Entry<String, Float> entry : sortedUsers) {
-            // Alternate row background
             if (alternateRow) {
                 cs.setNonStrokingColor(new Color(245, 245, 245));
                 cs.addRect(MARGIN, yPosition - ROW_HEIGHT, pageWidth - (2 * MARGIN), ROW_HEIGHT);
@@ -173,14 +159,12 @@ public class HoursReportPdfGenerator {
                 cs.setNonStrokingColor(Color.BLACK);
             }
             
-            // Draw user name
             cs.beginText();
             cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), TABLE_FONT_SIZE);
             cs.newLineAtOffset(MARGIN + 10, yPosition - 14);
             cs.showText(entry.getKey());
             cs.endText();
             
-            // Draw hours
             cs.beginText();
             cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), TABLE_FONT_SIZE);
             cs.newLineAtOffset(pageWidth - MARGIN - 80, yPosition - 14);
@@ -192,7 +176,6 @@ public class HoursReportPdfGenerator {
             alternateRow = !alternateRow;
         }
         
-        // Draw total row
         cs.setNonStrokingColor(new Color(21, 111, 171));
         cs.addRect(MARGIN, yPosition - ROW_HEIGHT, pageWidth - (2 * MARGIN), ROW_HEIGHT);
         cs.fill();

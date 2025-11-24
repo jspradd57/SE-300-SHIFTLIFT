@@ -45,17 +45,25 @@ public class Schedule {
     @Column(name = "is_approved")
     private Boolean is_approved;
     
-    // Non-persistent field to hold shifts loaded from database
     private transient List<Shift> shifts;
     
-    // Non-persistent field to hold week subdivisions
     private transient List<Week> weeks;
 
-    // Default constructor required by JPA
+    /**
+     * Default no-argument constructor required by JPA.
+     * Initializes weeks list.
+     */
     public Schedule() {
         this.weeks = new ArrayList<>();
     }
 
+    /**
+     * Constructs a Schedule with start and end dates.
+     * Initializes the schedule as not approved.
+     * 
+     * @param start the schedule start date
+     * @param end the schedule end date
+     */
     public Schedule(Date start, Date end)
     {
         this.shifts = new ArrayList<>();
@@ -65,36 +73,65 @@ public class Schedule {
         this.weeks = new ArrayList<>();
     }
 
+    /**
+     * Gets the schedule's database ID.
+     * 
+     * @return the schedule ID
+     */
     public Long getId() {
         return id;
     }
 
+    /**
+     * Sets the schedule's database ID.
+     * 
+     * @param id the schedule ID
+     */
     public void setId(Long id) {
         this.id = id;
     }
 
+    /**
+     * Gets the schedule start date.
+     * 
+     * @return the start date
+     */
     public Date getStartDate() {
         return schedule_start_date;
     }
 
+    /**
+     * Gets the schedule end date.
+     * 
+     * @return the end date
+     */
     public Date getEndDate() {
         return schedule_end_date;
     }
 
+    /**
+     * Sets the approval status of the schedule.
+     * 
+     * @param approved true if schedule is approved for publication, false otherwise
+     */
     public void setApproved(Boolean approved)
     {
         this.is_approved = approved;
     }
 
+    /**
+     * Gets the approval status of the schedule.
+     * 
+     * @return true if schedule is approved, false otherwise
+     */
     public Boolean getApproved()
     {
         return this.is_approved;
     }
 
-    //Helper methods
-
     /**
      * Generates week subdivisions (Friday-Thursday) spanning from schedule start to end date.
+     * Each week runs from Friday through the following Thursday.
      */
     public void generateWeeks() {
         weeks.clear();
@@ -111,19 +148,15 @@ public class Schedule {
             schedule_end_date.get_day()
         );
         
-        // Find the first Friday on or before the start date
         LocalDate currentFriday = startLocal.with(TemporalAdjusters.previousOrSame(DayOfWeek.FRIDAY));
         
-        // If the first Friday is before the schedule start, use the start date instead
         if (currentFriday.isBefore(startLocal)) {
             currentFriday = startLocal;
         }
         
         while (!currentFriday.isAfter(endLocal)) {
-            // Calculate Thursday of this week (6 days after Friday)
             LocalDate currentThursday = currentFriday.plusDays(6);
             
-            // If Thursday goes beyond schedule end, use the end date instead
             if (currentThursday.isAfter(endLocal)) {
                 currentThursday = endLocal;
             }
@@ -142,40 +175,42 @@ public class Schedule {
             
             weeks.add(new Week(weekStart, weekEnd));
             
-            // Move to next Friday
             currentFriday = currentFriday.plusWeeks(1);
         }
     }
 
     /**
      * Organizes loaded shifts into their respective weeks.
+     * Clears existing shift assignments and redistributes all shifts.
      */
     public void organizeShiftsIntoWeeks() {
         if (weeks.isEmpty()) {
             generateWeeks();
         }
         
-        // Clear existing shifts in weeks
         for (Week week : weeks) {
             week.getShifts().clear();
         }
         
-        // Distribute shifts into weeks
         for (Shift shift : shifts) {
             for (Week week : weeks) {
                 if (week.isShiftInWeek(shift)) {
                     week.addShift(shift);
-                    break; // Shift can only belong to one week
+                    break;
                 }
             }
         }
     }
 
+    /**
+     * Loads shifts from database that fall within the schedule's date range.
+     * Clears existing shifts before loading and organizes them into weeks.
+     * 
+     * @param shiftService the service to retrieve shifts from database
+     */
     public void loadShifts(ShiftService shiftService)
     {
-        //Load shifts from database 
-        //For all shifts in database that fall within schedule_start_date and schedule_end_date
-        shifts.clear(); // Clear existing shifts before loading
+        shifts.clear();
         
         List<Shift> allShifts = shiftService.getAllShifts();
         
@@ -189,16 +224,14 @@ public class Schedule {
             }
         }
         
-        // Organize shifts into weeks after loading
         organizeShiftsIntoWeeks();
     }
 
-
-
-
-
     /**
-     * Return the shifts list managed by JPA.
+     * Returns the shifts list managed by JPA.
+     * Initializes the list if it's null.
+     * 
+     * @return the list of shifts
      */
     public List<Shift> getShifts() {
         if (shifts == null) {
@@ -208,14 +241,20 @@ public class Schedule {
     }
 
     /**
-     * Return a copy of the shifts list for read-only viewing.
+     * Returns a copy of the shifts list for read-only viewing.
+     * Prevents external modification of the internal shifts list.
+     * 
+     * @return a new ArrayList containing all shifts
      */
     public List<Shift> getShiftsCopy() {
         return new ArrayList<>(getShifts());
     }
 
     /**
-     * Return the list of week subdivisions (Friday-Thursday).
+     * Returns the list of week subdivisions (Friday-Thursday).
+     * Initializes the list if it's null.
+     * 
+     * @return the list of weeks
      */
     public List<Week> getWeeks() {
         if (weeks == null) {
@@ -225,7 +264,10 @@ public class Schedule {
     }
 
     /**
-     * Return a specific week by index.
+     * Returns a specific week by index.
+     * 
+     * @param index the zero-based index of the week
+     * @return the week at the specified index, or null if index is out of bounds
      */
     public Week getWeek(int index) {
         if (weeks == null || index < 0 || index >= weeks.size()) {

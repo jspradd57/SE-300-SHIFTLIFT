@@ -11,39 +11,73 @@ public class ScheduleService {
     private final ScheduleRepository scheduleRepository;
     private final ShiftRepositry shiftRepositry;
 
+    /**
+     * Constructs a ScheduleService with required dependencies.
+     * 
+     * @param scheduleRepository the repository for schedule persistence
+     * @param shiftRepositry the repository for shift persistence
+     */
     ScheduleService(ScheduleRepository scheduleRepository, ShiftRepositry shiftRepositry) {
         this.scheduleRepository = scheduleRepository;
         this.shiftRepositry = shiftRepositry;
     }
 
+    /**
+     * Creates a new schedule with the specified date range.
+     * 
+     * @param startDate the start date of the schedule
+     * @param endDate the end date of the schedule
+     * @return the created schedule
+     */
     @Transactional
     public Schedule createSchedule(Date startDate, Date endDate) {
         Schedule schedule = new Schedule(startDate, endDate);
         return scheduleRepository.saveAndFlush(schedule);
     }
 
+    /**
+     * Returns a list of all schedules in the database.
+     * 
+     * @return list of all schedules
+     */
     @Transactional(readOnly = true)
     public List<Schedule> getAllSchedules() {
         return scheduleRepository.findAll();
     }
 
+    /**
+     * Finds a schedule by its ID.
+     * 
+     * @param id the schedule ID
+     * @return Optional containing schedule if found, empty otherwise
+     */
     @Transactional(readOnly = true)
     public Optional<Schedule> getScheduleById(Long id) {
         return scheduleRepository.findById(id);
     }
 
+    /**
+     * Saves or updates a schedule in the database.
+     * 
+     * @param schedule the schedule to save
+     * @return the saved schedule
+     */
     @Transactional
     public Schedule save(Schedule schedule) {
         return scheduleRepository.saveAndFlush(schedule);
     }
 
+    /**
+     * Deletes a schedule from the database.
+     * Cleans up join table references before deletion.
+     * 
+     * @param schedule the schedule to delete
+     */
     @Transactional
     public void delete(Schedule schedule) {
         if (schedule == null || schedule.getId() == null) return;
-        // Clean up the join table first
         scheduleRepository.deleteScheduleShiftsJoinTable(schedule.getId());
         scheduleRepository.flush();
-        // Then delete the schedule
         scheduleRepository.delete(schedule);
         scheduleRepository.flush();
     }
@@ -68,7 +102,6 @@ public class ScheduleService {
             int startDateInt = startDate.get_Date();
             int endDateInt = endDate.get_Date();
             
-            // Find shifts within the schedule date range
             List<Shift> shiftsToDelete = allShifts.stream()
                 .filter(shift -> {
                     if (shift.getDate() == null) return false;
@@ -79,36 +112,42 @@ public class ScheduleService {
             
             deletedShiftsCount = shiftsToDelete.size();
             
-            // First, clean up the join table entries if schedule ID exists
             if (schedule.getId() != null) {
                 scheduleRepository.deleteScheduleShiftsJoinTable(schedule.getId());
                 scheduleRepository.flush();
             }
             
-            // Then delete each shift
             for (Shift shift : shiftsToDelete) {
                 shiftService.deleteShift(shift);
             }
         }
         
-        // Finally delete the schedule itself
         scheduleRepository.delete(schedule);
         scheduleRepository.flush();
         
         return deletedShiftsCount;
     }
 
+    /**
+     * Deletes a schedule by its ID.
+     * Cleans up join table references before deletion.
+     * 
+     * @param id the schedule ID
+     */
     @Transactional
     public void deleteById(Long id) {
         if (id == null) return;
-        // Clean up the join table first
         scheduleRepository.deleteScheduleShiftsJoinTable(id);
         scheduleRepository.flush();
-        // Then delete the schedule
         scheduleRepository.deleteById(id);
         scheduleRepository.flush();
     }
 
+    /**
+     * Returns the total count of schedules in the database.
+     * 
+     * @return count of schedules
+     */
     @Transactional(readOnly = true)
     public long count() {
         return scheduleRepository.count();
@@ -124,7 +163,6 @@ public class ScheduleService {
         return allSchedules.stream()
             .filter(s -> s.getApproved() == null || !s.getApproved())
             .max((s1, s2) -> {
-                // Compare by ID (assuming higher ID = more recent)
                 if (s1.getId() == null) return -1;
                 if (s2.getId() == null) return 1;
                 return s1.getId().compareTo(s2.getId());

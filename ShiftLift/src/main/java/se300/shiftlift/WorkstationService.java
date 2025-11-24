@@ -19,12 +19,23 @@ public class WorkstationService {
     @PersistenceContext
     private EntityManager entityManager;
     
-    public WorkstationService(WorkstationRepository workstationRepository, ShiftService shiftService) {
+    /**
+     * Constructs a WorkstationService with required dependencies.
+     * 
+     * @param workstationRepository the repository for workstation persistence
+     * @param shiftService the service for managing shifts
+     */
+    WorkstationService(WorkstationRepository workstationRepository, ShiftService shiftService) {
         this.workstationRepository = workstationRepository;
         this.shiftService = shiftService;
     }
     
-    
+    /**
+     * Creates a new workstation and saves to database.
+     * 
+     * @param name the workstation name
+     * @throws IllegalArgumentException if name already exists
+     */
     @Transactional
     public void createWorstation(String name)
     {
@@ -38,44 +49,75 @@ public class WorkstationService {
 
     }
 
-    //Returns list of all workstations in database
+    /**
+     * Returns a paginated list of all workstations in the database.
+     * 
+     * @param pageable the pagination information
+     * @return list of workstations
+     */
     @Transactional(readOnly = true)
     public List<Workstation> list(Pageable pageable) {
         return workstationRepository.findAll(pageable).toList();
     }
 
-    //Returns a list of all workstations with a certain name
+    /**
+     * Finds all workstations with a specific name.
+     * 
+     * @param name the workstation name to search for
+     * @return list of matching workstations
+     */
     @Transactional(readOnly = true)
     public List<Workstation> findByName(String name) {
         return workstationRepository.findByWorkstation(name);
     }
     
-    //Returns Optional of workstation by name for EditWorkstationView
+    /**
+     * Finds a workstation by name, returning an Optional.
+     * 
+     * @param name the workstation name to search for
+     * @return Optional containing workstation if found, empty otherwise
+     */
     @Transactional(readOnly = true)
     public java.util.Optional<Workstation> findByNameOptional(String name) {
         List<Workstation> workstations = workstationRepository.findByWorkstation(name);
         return workstations.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(workstations.get(0));
     }
 
-    //Returns workstation from database matching name search
+    /**
+     * Searches for workstations by name containing the search term (case-insensitive).
+     * 
+     * @param name the search term
+     * @param pageable the pagination information
+     * @return slice of matching workstations
+     */
     @Transactional(readOnly = true)
     public Slice<Workstation> searchByName(String name, Pageable pageable) {
         return workstationRepository.findByWorkstationContainingIgnoreCase(name, pageable);
     }
 
-    //Saves or updates a workstation in the database
+    /**
+     * Saves or updates a workstation in the database.
+     * 
+     * @param workstation the workstation to save
+     * @return the saved workstation
+     */
     @Transactional
     public Workstation save(Workstation workstation)
     {
         return workstationRepository.saveAndFlush(workstation);
     }
 
-    //Deletes a workstation from the database
+    /**
+     * Deletes a workstation from the database.
+     * Removes all shifts assigned to this workstation.
+     * 
+     * @param workstation the workstation to delete
+     * @return the number of shifts deleted
+     */
     @Transactional
     public int delete(Workstation workstation) {
         if (workstation == null || workstation.getId() == null) return 0;
         
-        // Count shifts before deleting
         List<Shift> allShifts = shiftService.getAllShifts();
         int deletedShiftsCount = (int) allShifts.stream()
             .filter(shift -> shift.getWorkstation() != null && 
@@ -83,25 +125,31 @@ public class WorkstationService {
                            shift.getWorkstation().getId().equals(workstation.getId()))
             .count();
         
-        // Clear the persistence context first to avoid any cached entities
         entityManager.clear();
         
-        // Use the batch delete query to delete all shifts for this workstation
         shiftService.deleteShiftsByWorkstationId(workstation.getId());
         
-        // Delete the workstation
         workstationRepository.deleteById(workstation.getId());
         
         return deletedShiftsCount;
     }
 
-    //Return number of workstations in database
+    /**
+     * Returns the total count of workstations in the database.
+     * 
+     * @return count of workstations
+     */
     @Transactional(readOnly = true)
     public long count() {
         return workstationRepository.count();
     }
 
-    //Find workstation by ID
+    /**
+     * Finds a workstation by its ID.
+     * 
+     * @param id the workstation ID
+     * @return Optional containing workstation if found, empty otherwise
+     */
     @Transactional(readOnly = true)
     public java.util.Optional<Workstation> findById(Long id) {
         return workstationRepository.findById(id);
