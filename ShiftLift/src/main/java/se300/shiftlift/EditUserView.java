@@ -63,22 +63,23 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
     private final ScheduleService scheduleService;
     private boolean dirty = false;
     
+    /**
+     * Constructs the edit user view with form fields and navigation.
+     * Initializes value change listeners to track unsaved edits and automatically
+     * update username and initials fields when email changes.
+     */
     public EditUserView(UserService userService, ScheduleService scheduleService) {
         this.userService = userService;
         this.scheduleService = scheduleService;
         create_elements();
-        // fields are created; if opened directly with a username query param, beforeEnter will load
-        // track changes to detect unsaved edits
         emailTextField.addValueChangeListener(e -> {
             dirty = true;
-            // Preview the username and initials changes
             String email = e.getValue();
             if (email != null && !email.isEmpty() && email.contains("@")) {
                 String[] emailParts = email.split("@");
                 String username = emailParts[0];
                 usernameTextField.setValue(username);
                 
-                // Use the same initials logic as the User class
                 String initials = (User.get_first_inital(username) + username.charAt(0)).toUpperCase();
                 initialsTextField.setValue(initials);
             }
@@ -86,6 +87,12 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         passwordField.addValueChangeListener(e -> dirty = true);
     }
 
+    /**
+     * Validates user authentication and loads user data before entering the view.
+     * Checks for admin access and loads user data based on username query parameter.
+     * 
+     * @param event navigation event containing routing information and query parameters
+     */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         if (!Auth.isLoggedIn() || !Auth.isAdmin()) {
@@ -102,6 +109,12 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         }
     }
 
+    /**
+     * Prompts user to confirm navigation when there are unsaved changes.
+     * Displays confirmation dialog asking if user wants to leave without saving.
+     * 
+     * @param event navigation event that can be postponed for user confirmation
+     */
     @Override
     public void beforeLeave(com.vaadin.flow.router.BeforeLeaveEvent event) {
         if (!dirty) return;
@@ -140,6 +153,12 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         confirm.open();
     }
 
+    /**
+     * Loads and displays user data for the specified username.
+     * Searches for user in database and populates form fields with user data.
+     * 
+     * @param username the username to search for and load
+     */
     public void loadUserByUsername(String username) {
         List<User> users = userService.findByUsername(username);
         if (!users.isEmpty()) {
@@ -151,6 +170,12 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
 
 
 
+    /**
+     * Populates form fields with data from the specified user.
+     * Shows and sets max hours combo box for StudentWorker users only.
+     * 
+     * @param user the user whose data will populate the form fields
+     */
     private void setUserData(User user) {
         emailTextField.setValue(user.getEmail());
         usernameTextField.setValue(user.getUsername());
@@ -158,11 +183,10 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         initialsTextField.setValue(user.getInitials());
         passwordField.setValue(user.getPassword());
         
-        // Show and set max hours combo box only for StudentWorker
         if (user instanceof StudentWorker) {
             StudentWorker sw = (StudentWorker) user;
             int maxHours = sw.getMax_hours();
-            String selection = "International (20)"; // default
+            String selection = "International (20)";
             if (maxHours == 25) {
                 selection = "Domestic (25)";
             } else if (maxHours == 29) {
@@ -175,61 +199,55 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         }
     }
 
+    /**
+     * Creates and initializes all UI components for the edit user view.
+     * Configures drawer navigation, header, form fields, and buttons with appropriate styling.
+     */
     private void create_elements() {
         boolean admin = Auth.isAdmin();
         
-        // Create styled drawer menu
         VerticalLayout drawerLayout = new VerticalLayout();
         drawerLayout.setPadding(true);
         drawerLayout.setSpacing(true);
         
         if(admin){
-            // Routes that will be in the hamburger for navigation
             RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
             RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
             RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
             RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
-            // Apply styling to each link
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
             styleRouterLink(manageSchedulesLink);
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             styleRouterLink(mainMenuLink);
             
-            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, downloadPdfButton, changePasswordLink);
         }
         else{
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
             RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             styleRouterLink(mainMenuLink);
-            drawerLayout.add(mainMenuLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(mainMenuLink, downloadPdfButton, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
         
-        // Set drawer closed by default
         setDrawerOpened(false);
 
-        // Creates a hamburger for navigation to other tabs
         DrawerToggle toggle = new DrawerToggle();
         toggle.getStyle()
             .set("color", "#156fabff")
             .set("background-color", "#f5f5f5")
             .set("border-radius", "4px");
 
-        // Logout Button
         Button logoutBtn = new Button("Logout");
         logoutBtn.getStyle()
             .set("color", "#666666")
@@ -237,7 +255,6 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
             .set("margin-right", "20px");
         logoutBtn.addClickListener(e -> Auth.logoutToLogin());
 
-        // Title for navbar
         H2 navTitle = new H2("Edit User Data");
         navTitle.getStyle()
                .set("color", "#156fabff")
@@ -245,7 +262,6 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
                .set("margin", "0")
                .set("font-size", "24px");
 
-        // Navbar layout (this is the header)
         var header = new HorizontalLayout(toggle, navTitle, logoutBtn);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(Alignment.CENTER);
@@ -272,12 +288,10 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         layoutColumn7.setAlignItems(Alignment.CENTER);
 
         layoutRow6.setWidthFull();
-        //layoutColumn2.setFlexGrow(1.0, layoutRow6);
         layoutRow6.addClassName(Gap.MEDIUM);
         layoutRow6.setWidth("100%");
         layoutRow6.getStyle().set("flex-grow", "1");
         layoutColumn8.setHeightFull();
-        //layoutRow2.setFlexGrow(1.0, layoutColumn8);
         layoutColumn8.setWidth("100%");
         layoutColumn8.getStyle().set("flex-grow", "1");
         emailTextField.setLabel("Email:");
@@ -300,7 +314,7 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         maxHoursComboBox.setItems("International (20)", "Domestic (25)", "University Break (29)");
         maxHoursComboBox.setValue("International (20)");
         maxHoursComboBox.setWidth("min-content");
-        maxHoursComboBox.setVisible(false); // Hidden by default, shown only for StudentWorker
+        maxHoursComboBox.setVisible(false);
         layoutColumn3.setAlignSelf(FlexComponent.Alignment.CENTER, maxHoursComboBox);
         
         layoutRow7.setWidthFull();
@@ -363,10 +377,15 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
     layoutRow5.add(layoutColumn9);
     contentLayout.add(layoutRow8);
     
-    // Set content for AppLayout
     setContent(contentLayout);
     }
     
+    /**
+     * Applies consistent styling to navigation links in the drawer menu.
+     * Sets color, font, padding, and display properties for drawer navigation.
+     * 
+     * @param link RouterLink to be styled
+     */
     private void styleRouterLink(RouterLink link) {
         link.getStyle()
             .set("color", "#156fabff")
@@ -377,8 +396,13 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
             .set("font-size", "16px");
     }
 
+    /**
+     * Validates all form fields for required values and proper format.
+     * Sets error messages on invalid fields.
+     * 
+     * @return true if all fields are valid, false otherwise
+     */
     private boolean validateFields() {
-        // Implement field validation logic here
         if(emailTextField.isInvalid() || emailTextField.getValue().isEmpty()) {
             emailTextField.setErrorMessage("Invalid Email");
             emailTextField.setInvalid(true);
@@ -403,20 +427,22 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         return true;
     }
 
+    /**
+     * Handles save button click by validating and persisting user data.
+     * Updates email, password, and max hours (for StudentWorker) and navigates back to user list.
+     */
     private void save_button_click_listener() 
     {
         if(validateFields()) {
             if (user != null) {
                 try {
-                    // Email update will automatically update username and initials
                     user.setEmail(emailTextField.getValue().toLowerCase());
                     user.setPassword(passwordField.getValue());
                     
-                    // If user is StudentWorker, update max hours
                     if (user instanceof StudentWorker) {
                         StudentWorker sw = (StudentWorker) user;
                         String maxHoursSelection = maxHoursComboBox.getValue();
-                        int maxHours = 20; // default
+                        int maxHours = 20;
                         if (maxHoursSelection != null) {
                             if (maxHoursSelection.contains("25")) {
                                 maxHours = 25;
@@ -430,7 +456,6 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
                     userService.save(user);
                     dirty = false;
                     Notification.show("User saved", 2000, Notification.Position.BOTTOM_START);
-                    // Navigate back to list-users after successful save
                     UI.getCurrent().navigate("list-users");
                 } catch (Exception e) {
                     Notification.show("Error saving user: " + e.getMessage(), 
@@ -440,13 +465,19 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         }   
     }
 
+    /**
+     * Handles cancel button click by clearing dirty flag and navigating back to user list.
+     */
     private void cancel_button_click_listener() 
     {
-        // Clear dirty flag and navigate back
         dirty = false;
         UI.getCurrent().navigate("list-users");
     }
 
+    /**
+     * Handles delete button click by showing confirmation dialog.
+     * Deletes user and associated shifts if confirmed, then navigates back to user list.
+     */
     private void delete_button_click_listener() 
     {
         if (user == null) return;
@@ -494,6 +525,13 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         confirm.open();
     }
 
+    /**
+     * Creates a button for downloading the latest published schedule as a PDF.
+     * Finds the most recent published schedule, generates a PDF file, and triggers browser download.
+     * Shows notifications for success or error conditions.
+     * 
+     * @return styled download button with click handler
+     */
     private Button createDownloadPdfButton() {
         Button downloadButton = new Button("Download PDF");
         downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -507,7 +545,6 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
         
         downloadButton.addClickListener(e -> {
             try {
-                // Find the latest published schedule
                 List<Schedule> allSchedules = scheduleService.getAllSchedules();
                 java.util.Optional<Schedule> latestPublished = allSchedules.stream()
                     .filter(s -> s.getApproved() != null && s.getApproved())
@@ -523,12 +560,10 @@ public class EditUserView extends AppLayout implements BeforeEnterObserver, com.
                 Schedule schedule = latestPublished.get();
                 scheduleService.loadShiftsForSchedule(schedule);
                 
-                // Generate PDF to temporary file
                 String tempDir = System.getProperty("java.io.tmpdir");
                 String pdfPath = tempDir + "/schedule-" + schedule.getId() + ".pdf";
                 SchedulePdfGenerator.generateSchedulePdf(schedule, pdfPath);
                 
-                // Trigger download
                 java.io.File pdfFile = new java.io.File(pdfPath);
                 com.vaadin.flow.server.StreamResource resource = 
                     new com.vaadin.flow.server.StreamResource("schedule.pdf", 

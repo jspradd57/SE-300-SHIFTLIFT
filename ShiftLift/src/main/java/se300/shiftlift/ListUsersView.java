@@ -42,69 +42,64 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
     private String currentQuery = "";
     private Button selectedItem = null;
 
+    /**
+     * Constructs the List Users View for managing workers and students.
+     * Initializes navigation drawer, search functionality, and pagination controls.
+     * Displays user list with search, edit, and navigation capabilities.
+     */
     public ListUsersView(UserService userService, ScheduleService scheduleService) {
         this.userService = userService;
         this.scheduleService = scheduleService;
         
         boolean admin = Auth.isAdmin();
         
-        // Create styled drawer menu
         VerticalLayout drawerLayout = new VerticalLayout();
         drawerLayout.setPadding(true);
         drawerLayout.setSpacing(true);
         
         if(admin){
-            // Routes that will be in the hamburger for navigation
             RouterLink viewPendingScheduleLink = new RouterLink("View Pending Schedule", MainMenuView.class);
             RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
             RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
             RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
-            // Apply styling to each link
             styleRouterLink(viewPendingScheduleLink);
             styleRouterLink(viewPublishedScheduleLink);
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
             styleRouterLink(manageSchedulesLink);
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, downloadPdfButton, changePasswordLink);
         }
         else{
             RouterLink viewPendingScheduleLink = new RouterLink("View Pending Schedule", MainMenuView.class);
             RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
             styleRouterLink(viewPendingScheduleLink);
             styleRouterLink(viewPublishedScheduleLink);
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, downloadPdfButton, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
         
-        // Set drawer closed by default
         setDrawerOpened(false);
 
-        // Creates a hamburger for navigation to other tabs
         DrawerToggle toggle = new DrawerToggle();
         toggle.getStyle()
             .set("color", "#156fabff")
             .set("background-color", "#f5f5f5")
             .set("border-radius", "4px");
 
-        // Logout Button
         Button logoutBtn = new Button("Logout");
         logoutBtn.getStyle()
             .set("color", "#666666")
@@ -112,7 +107,6 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
             .set("margin-right", "20px");
         logoutBtn.addClickListener(e -> Auth.logoutToLogin());
 
-        // Title for navbar
         H2 navTitle = new H2("Users");
         navTitle.getStyle()
                .set("color", "#156fabff")
@@ -120,7 +114,6 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
                .set("margin", "0")
                .set("font-size", "24px");
 
-        // Navbar layout (this is the header)
         var header = new HorizontalLayout(toggle, navTitle, logoutBtn);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
@@ -143,11 +136,9 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
             loadUsers(currentQuery, currentPage);
         });
 
-        // Create navigation buttons
         Button newUserButton = new Button("Create New User");
         Button returnButton = new Button("Return");
 
-        // Style the buttons
         prevButton.getStyle()
             .set("font-family", "Poppins, sans-serif");
         
@@ -159,7 +150,7 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
             .set("color", "white")
             .set("font-family", "Poppins, sans-serif");
         editButton.setEnabled(false);
-        editButton.getStyle().set("opacity", "0.5"); // Initial greyed out state
+        editButton.getStyle().set("opacity", "0.5");
         
         newUserButton.getStyle()
             .set("background-color", "#156fabff")
@@ -169,13 +160,10 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
         returnButton.getStyle()
             .set("font-family", "Poppins, sans-serif");
 
-        // Add navigation handlers
     newUserButton.addClickListener(e -> UI.getCurrent().navigate("NewWorker"));
-    // Return to the Main Menu view
     returnButton.addClickListener(e -> UI.getCurrent().navigate(MainMenuView.class));
         
 
-    //Use url parameter to pass username to edit view
         editButton.addClickListener(e -> {
             if (selectedItem != null) {
                 String username = selectedItem.getElement().getProperty("_user");
@@ -186,7 +174,6 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
             }
         });
 
-        // Create search layout at the top
         HorizontalLayout searchLayout = new HorizontalLayout(searchField);
         searchLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         searchLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
@@ -208,34 +195,29 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
         listLayout.setPadding(false);
         listLayout.setAlignItems(FlexComponent.Alignment.START);
         listLayout.getStyle()
-            .set("gap", "6px")  // Minimal gap between rows
+            .set("gap", "6px")
             .set("margin-top", "16px");
             
-        // Create pagination layout
         HorizontalLayout paginationLayout = new HorizontalLayout(prevButton, nextButton);
         paginationLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         paginationLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
         paginationLayout.setSpacing(true);
 
-        // Create action buttons layout
         HorizontalLayout actionLayout = new HorizontalLayout(newUserButton, editButton, returnButton);
         actionLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         actionLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
         actionLayout.setSpacing(true);
         
-        // Update return button style to grey
         returnButton.getStyle()
             .set("font-family", "Poppins, sans-serif")
-            .set("color", "#666666");  // Grey text color
+            .set("color", "#666666");
 
-        // Create navigation layout at the bottom to hold both button groups
         VerticalLayout bottomLayout = new VerticalLayout(paginationLayout, actionLayout);
         bottomLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         bottomLayout.setSpacing(true);
         bottomLayout.setPadding(true);
         bottomLayout.getStyle().set("margin-top", "24px");
         
-        // Create background div for deselection
         Div background = new Div();
         background.setSizeFull();
         background.getStyle()
@@ -253,14 +235,12 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
             }
         });
 
-        // Create main content container
         VerticalLayout contentLayout = new VerticalLayout(searchLayout, listLayout, bottomLayout);
         contentLayout.setSizeFull();
         contentLayout.setSpacing(true);
         contentLayout.setPadding(true);
         contentLayout.setAlignItems(FlexComponent.Alignment.CENTER);
 
-        // Set content for AppLayout
         setContent(contentLayout);
 
         loadUsers(currentQuery, currentPage);
@@ -284,6 +264,10 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
         }
     }
 
+    /**
+     * Loads and displays users based on search query and pagination.
+     * Fetches users from the service and renders them as interactive list items.
+     */
     private void loadUsers(String query, int page) {
         listLayout.removeAll();
         org.springframework.data.domain.Slice<User> slice;
@@ -304,7 +288,7 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
             VerticalLayout userInfo = new VerticalLayout();
             userInfo.setSpacing(false);
             userInfo.setPadding(false);
-            userInfo.setSizeFull(); // Take full available space in the row
+            userInfo.setSizeFull();
             userInfo.setAlignItems(FlexComponent.Alignment.START);
             userInfo.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.CENTER);
 
@@ -324,16 +308,15 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
 
             userInfo.add(username, email);
 
-            // Create a seniority label to the right of the avatar
             String labelText;
             String labelColor;
             if (u instanceof ManagerUser) {
                 labelText = "Manager";
-                labelColor = "#156fabff"; // ShiftLift blue color for Manager tag
+                labelColor = "#156fabff";
             } else {
                 int s = u.getSeniority();
                 labelText = s > 0 ? String.valueOf(s) : "";
-                labelColor = "#000000"; // Black for seniority numbers
+                labelColor = "#000000";
             }
             Span labelSpan = new Span(labelText);
             labelSpan.getStyle()
@@ -341,55 +324,51 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
                 .set("color", labelColor)
                 .set("font-family", "Poppins, sans-serif")
                 .set("font-size", "16px")
-                .set("align-self", "center"); // Ensure label is vertically centered
+                .set("align-self", "center");
 
-            // Place avatar, then expanding userInfo, then label (Manager/seniority) at the far right
             HorizontalLayout row = new HorizontalLayout(avatar, userInfo, labelSpan);
-            row.setWidth("560px"); // Slightly narrower than container
-            row.setAlignItems(FlexComponent.Alignment.CENTER); // Vertically center all components
-            row.setHeight("80px"); // Match ManageSchedulesView height
+            row.setWidth("560px");
+            row.setAlignItems(FlexComponent.Alignment.CENTER);
+            row.setHeight("80px");
             row.setJustifyContentMode(com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode.BETWEEN);
-            // Make the middle column expand so the seniority stays aligned to the far right
             row.expand(userInfo);
             row.getStyle()
-                .set("padding", "10px 24px")  // Reduced vertical padding to fit within button
+                .set("padding", "10px 24px")
                 .set("border-radius", "8px")
-                .set("margin", "0")  // Remove margin to prevent overflow
-                .set("height", "80px") // Match ManageSchedulesView height
-                .set("max-height", "80px") // Prevent expansion beyond button
+                .set("margin", "0")
+                .set("height", "80px")
+                .set("max-height", "80px")
                 .set("display", "flex")
-                .set("align-items", "center") // Ensure CSS flex centering
-                .set("box-sizing", "border-box"); // Include padding in height calculation
+                .set("align-items", "center")
+                .set("box-sizing", "border-box");
             avatar.getStyle()
                 .set("margin-right", "16px")
-                .set("flex-shrink", "0") // Prevent avatar from shrinking
-                .set("align-self", "center"); // Ensure avatar is vertically centered
+                .set("flex-shrink", "0")
+                .set("align-self", "center");
 
             Button item = new Button(row);
             item.getStyle()
                 .set("width", "100%")
-                .set("height", "80px") // Match ManageSchedulesView height
+                .set("height", "80px")
                 .set("text-align", "left")
                 .set("padding", "0")
                 .set("background", "white")
                 .set("cursor", "pointer")
                 .set("border", "none")
-                .set("margin", "0 auto") // Center the narrower row in container
-                .set("overflow", "hidden") // Prevent content from sticking out
+                .set("margin", "0 auto")
+                .set("overflow", "hidden")
                 .set("display", "flex")
                 .set("align-items", "center")
                 .set("justify-content", "center")
                 .set("transition", "all 0.2s");
 
-            item.addClickListener(ev -> {
+            item.addClickListener(e -> {
                 if (selectedItem == item) {
-                    // Clicking the same item again deselects it
                     deselectUser(selectedItem);
                     selectedItem = null;
                     editButton.setEnabled(false);
                     editButton.getStyle().set("opacity", "0.5");
                 } else {
-                    // Selecting a new item
                     if (selectedItem != null) {
                         deselectUser(selectedItem);
                     }
@@ -398,11 +377,9 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
                     editButton.setEnabled(true);
                     editButton.getStyle().set("opacity", "1");
                 }
-                // Prevent the event from reaching the background
-                ev.getSource().getElement().executeJs("event.stopPropagation()");
+                e.getSource().getElement().executeJs("event.stopPropagation()");
             });
 
-            // Store user object in button's element data
             item.getElement().setProperty("_user", u.getUsername());
 
             listLayout.add(item);
@@ -412,21 +389,21 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
         nextButton.setEnabled(slice.hasNext());
     }
 
+    /**
+     * Applies selection styling to a user list item.
+     * Sets ShiftLift blue background with yellow border and changes text to white.
+     */
     private void selectUser(Button userButton) {
-        // Apply ShiftLift blue background and yellow border
         userButton.getStyle()
             .set("background-color", "#156fabff")
             .set("border", "3px solid #ffc107");
         
-        // Change text colors to white
         HorizontalLayout row = (HorizontalLayout) userButton.getChildren().findFirst().orElse(null);
         if (row != null) {
             row.getChildren().forEach(component -> {
                 if (component instanceof Avatar) {
-                    // Change avatar text color to white
                     component.getStyle().set("color", "white");
                 } else if (component instanceof VerticalLayout) {
-                    // Change username and email text to white
                     VerticalLayout userInfo = (VerticalLayout) component;
                     userInfo.getChildren().forEach(textComponent -> {
                         if (textComponent instanceof Span) {
@@ -434,45 +411,40 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
                         }
                     });
                 } else if (component instanceof Span) {
-                    // Change seniority/manager label to white
                     component.getStyle().set("color", "white");
                 }
             });
         }
     }
 
+    /**
+     * Removes selection styling from a user list item.
+     * Resets background, border, and text colors to original state.
+     */
     private void deselectUser(Button userButton) {
-        // Reset background and border
         userButton.getStyle()
             .set("background-color", "white")
             .set("border", "none");
         
-        // Reset text colors to original
         HorizontalLayout row = (HorizontalLayout) userButton.getChildren().findFirst().orElse(null);
         if (row != null) {
             row.getChildren().forEach(component -> {
                 if (component instanceof Avatar) {
-                    // Reset avatar text color
                     component.getStyle().remove("color");
                 } else if (component instanceof VerticalLayout) {
-                    // Reset username and email text colors
                     VerticalLayout userInfo = (VerticalLayout) component;
                     userInfo.getChildren().forEach(textComponent -> {
                         if (textComponent instanceof Span) {
                             Span span = (Span) textComponent;
-                            // Restore original colors based on content
                             String text = span.getText();
                             if (text.contains("@")) {
-                                // Email - grey color
                                 span.getStyle().set("color", "#666666");
                             } else {
-                                // Username - dark color
                                 span.getStyle().set("color", "#00070cff");
                             }
                         }
                     });
                 } else if (component instanceof Span) {
-                    // Reset seniority/manager label to original color
                     Span labelSpan = (Span) component;
                     String text = labelSpan.getText();
                     if ("Manager".equals(text)) {
@@ -485,6 +457,10 @@ public class ListUsersView extends AppLayout implements BeforeEnterObserver {
         }
     }
     
+    /**
+     * Creates a button for downloading the published schedule as a PDF.
+     * Fetches the latest published schedule and generates a PDF document.
+     */
     private Button createDownloadPdfButton() {
         Button downloadButton = new Button("Download PDF");
         downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);

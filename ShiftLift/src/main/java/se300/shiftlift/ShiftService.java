@@ -11,11 +11,25 @@ public class ShiftService
     private ShiftRepositry shiftRepositry;
     private final WorkstationRepository workstationRepository;
 
+    /**
+     * Constructs a ShiftService with required dependencies.
+     * 
+     * @param shiftRepositry the repository for shift persistence
+     * @param workstationRepository the repository for workstation persistence
+     */
     ShiftService(ShiftRepositry shiftRepositry, WorkstationRepository workstationRepository) {
         this.shiftRepositry = shiftRepositry;
         this.workstationRepository = workstationRepository;
     }
 
+    /**
+     * Adds a new shift to the database.
+     * 
+     * @param date the shift date
+     * @param worker the student worker assigned to the shift
+     * @param workstation the workstation for the shift
+     * @param time the time range for the shift
+     */
     @Transactional
     public void addShift(Date date, User worker, Workstation workstation, Time time)
     {
@@ -28,12 +42,25 @@ public class ShiftService
  
     }
 
-    //Returns a list of all shifts in the database
+    /**
+     * Returns a list of all shifts in the database.
+     * 
+     * @return list of all shifts
+     */
     @Transactional(readOnly = true)
     public List<Shift> getAllShifts() {
         return shiftRepositry.findAll();
     }
 
+    /**
+     * Updates an existing shift with new values.
+     * 
+     * @param shift the shift to update
+     * @param date the new date
+     * @param worker the new student worker
+     * @param workstation the new workstation
+     * @param time the new time range
+     */
     @Transactional
     public void updateShift(Shift shift, Date date, User worker, Workstation workstation, Time time) {
         try {
@@ -47,46 +74,67 @@ public class ShiftService
         }
     }
 
+    /**
+     * Deletes a shift from the database.
+     * Cleans up join table references before deletion.
+     * 
+     * @param shift the shift to delete
+     */
     @Transactional
     public void deleteShift(Shift shift) {
         if (shift != null && shift.getId() != null) {
-            // First, clean up the schedules_shifts join table
             shiftRepositry.deleteScheduleShiftsJoinTableByShiftId(shift.getId());
             shiftRepositry.flush();
-            // Then delete the shift
             shiftRepositry.delete(shift);
             shiftRepositry.flush();
         }
     }
 
+    /**
+     * Deletes all shifts for a specific user.
+     * Cleans up join table references before deletion.
+     * 
+     * @param userId the ID of the user
+     * @return number of shifts deleted
+     */
     @Transactional
     public int deleteShiftsByUserId(Long userId) {
         if (userId == null) return 0;
-        // First, clean up the schedules_shifts join table
         shiftRepositry.deleteScheduleShiftsJoinTableByUserId(userId);
         shiftRepositry.flush();
-        // Then delete the shifts
         int deleted = shiftRepositry.deleteByWorkerIdNative(userId);
         shiftRepositry.flush();
         return deleted;
     }
 
+    /**
+     * Deletes all shifts for a specific workstation.
+     * Cleans up join table references before deletion.
+     * 
+     * @param workstationId the ID of the workstation
+     * @return number of shifts deleted
+     */
     @Transactional
     public int deleteShiftsByWorkstationId(Long workstationId) {
         if (workstationId == null) return 0;
-        // First, clean up the schedules_shifts join table
         shiftRepositry.deleteScheduleShiftsJoinTableByWorkstationId(workstationId);
         shiftRepositry.flush();
-        // Then delete the shifts
         int deleted = shiftRepositry.deleteByWorkstationIdNative(workstationId);
         shiftRepositry.flush();
         return deleted;
     }
 
+    /**
+     * Checks if a workstation is occupied at the specified date and time.
+     * 
+     * @param workstation the workstation to check
+     * @param date the date to check
+     * @param time the time range to check
+     * @return true if workstation is occupied, false otherwise
+     */
     public boolean workstationOcupied(Workstation workstation, Date date, Time time) {
         List<Shift> allShifts = getAllShifts();
         for (Shift shift : allShifts) {
-            // Compare workstation by ID (for entities) and date by value
             boolean sameWorkstation = shift.getWorkstation().getId() != null && 
                                      workstation.getId() != null &&
                                      shift.getWorkstation().getId().equals(workstation.getId());
@@ -94,21 +142,29 @@ public class ShiftService
             boolean sameDate = shift.getDate().get_Date() == date.get_Date();
             
             if (sameWorkstation && sameDate && timesOverlap(shift.getTime(), time)) {
-                return true; // Workstation is occupied (times overlap)
+                return true;
             }
         }
-        return false; // Workstation is available
+        return false;
     }
 
+    /**
+     * Checks if a workstation is occupied at the specified date and time,
+     * excluding a specific shift from the check.
+     * 
+     * @param workstation the workstation to check
+     * @param date the date to check
+     * @param time the time range to check
+     * @param excludeShiftId the shift ID to exclude from the check
+     * @return true if workstation is occupied, false otherwise
+     */
     public boolean workstationOcupied(Workstation workstation, Date date, Time time, Long excludeShiftId) {
         List<Shift> allShifts = getAllShifts();
         for (Shift shift : allShifts) {
-            // Skip the shift being edited
             if (excludeShiftId != null && shift.getId() != null && shift.getId().equals(excludeShiftId)) {
                 continue;
             }
             
-            // Compare workstation by ID (for entities) and date by value
             boolean sameWorkstation = shift.getWorkstation().getId() != null && 
                                      workstation.getId() != null &&
                                      shift.getWorkstation().getId().equals(workstation.getId());
@@ -116,16 +172,23 @@ public class ShiftService
             boolean sameDate = shift.getDate().get_Date() == date.get_Date();
             
             if (sameWorkstation && sameDate && timesOverlap(shift.getTime(), time)) {
-                return true; // Workstation is occupied (times overlap)
+                return true;
             }
         }
-        return false; // Workstation is available
+        return false;
     }
 
+    /**
+     * Checks if a worker is double booked at the specified date and time.
+     * 
+     * @param worker the worker to check
+     * @param date the date to check
+     * @param time the time range to check
+     * @return true if worker is double booked, false otherwise
+     */
     public boolean workerDoubleBooked(User worker, Date date, Time time) {
         List<Shift> allShifts = getAllShifts();
         for (Shift shift : allShifts) {
-            // Compare worker by ID (for entities) and date by value
             boolean sameWorker = shift.getStudentWorker().getId() != null && 
                                 worker.getId() != null &&
                                 shift.getStudentWorker().getId().equals(worker.getId());
@@ -133,21 +196,29 @@ public class ShiftService
             boolean sameDate = shift.getDate().get_Date() == date.get_Date();
             
             if (sameWorker && sameDate && timesOverlap(shift.getTime(), time)) {
-                return true; // Worker is double booked (times overlap)
+                return true;
             }
         }
-        return false; // Worker is available
+        return false;
     }
 
+    /**
+     * Checks if a worker is double booked at the specified date and time,
+     * excluding a specific shift from the check.
+     * 
+     * @param worker the worker to check
+     * @param date the date to check
+     * @param time the time range to check
+     * @param excludeShiftId the shift ID to exclude from the check
+     * @return true if worker is double booked, false otherwise
+     */
     public boolean workerDoubleBooked(User worker, Date date, Time time, Long excludeShiftId) {
         List<Shift> allShifts = getAllShifts();
         for (Shift shift : allShifts) {
-            // Skip the shift being edited
             if (excludeShiftId != null && shift.getId() != null && shift.getId().equals(excludeShiftId)) {
                 continue;
             }
             
-            // Compare worker by ID (for entities) and date by value
             boolean sameWorker = shift.getStudentWorker().getId() != null && 
                                 worker.getId() != null &&
                                 shift.getStudentWorker().getId().equals(worker.getId());
@@ -155,17 +226,31 @@ public class ShiftService
             boolean sameDate = shift.getDate().get_Date() == date.get_Date();
             
             if (sameWorker && sameDate && timesOverlap(shift.getTime(), time)) {
-                return true; // Worker is double booked (times overlap)
+                return true;
             }
         }
-        return false; // Worker is available
+        return false;
     }
     
 
+    /**
+     * Checks if two time ranges overlap.
+     * 
+     * @param t1 the first time range
+     * @param t2 the second time range
+     * @return true if times overlap, false otherwise
+     */
     private boolean timesOverlap(Time t1, Time t2) {
         return t1.getStart_time() < t2.getEnd_time() && t2.getStart_time() < t1.getEnd_time();
     }
 
+    /**
+     * Finds an available workstation at the specified date and time.
+     * 
+     * @param date the date to check
+     * @param time the time range to check
+     * @return the ID of an available workstation, or null if none available
+     */
     public Long workstationAvailable(Date date, Time time) {
         List<Workstation> workstations = workstationRepository.findAll();
         for (Workstation workstation : workstations) {
@@ -174,10 +259,17 @@ public class ShiftService
                 return id;
             }
         }
-        // No available workstation found
         return null;
     }
 
+    /**
+     * Finds a conflicting shift for the specified workstation, date, and time.
+     * 
+     * @param workstation the workstation to check
+     * @param date the date to check
+     * @param time the time range to check
+     * @return the conflicting shift, or null if none found
+     */
     public Shift getConflictingShift(Workstation workstation, Date date, Time time) {
         List<Shift> allShifts = getAllShifts();
         for (Shift shift : allShifts) {
@@ -194,23 +286,28 @@ public class ShiftService
         return null;
     }
 
+    /**
+     * Determines if user1 is senior to user2.
+     * For student workers, compares seniority numbers (lower is more senior).
+     * Managers are senior to student workers.
+     * 
+     * @param user1 the first user
+     * @param user2 the second user
+     * @return true if user1 is senior to user2, false otherwise
+     */
     public boolean isSenior(User user1, User user2) {
-        // Both are StudentWorkers: compare seniority numbers (lower = more senior)
         if (user1 instanceof StudentWorker sw1 && user2 instanceof StudentWorker sw2) {
             return sw1.getSeniority() < sw2.getSeniority();
         }
         
-        // user1 is Manager, user2 is StudentWorker: Manager is senior
         if (user1 instanceof ManagerUser && user2 instanceof StudentWorker) {
             return true;
         }
         
-        // user1 is StudentWorker, user2 is Manager: StudentWorker is not senior to Manager
         if (user1 instanceof StudentWorker && user2 instanceof ManagerUser) {
             return false;
         }
         
-        // Both are Managers: neither is more senior (equal rank)
         return false;
     }
     
@@ -230,12 +327,10 @@ public class ShiftService
         double totalHours = 0;
         
         for (Shift shift : allShifts) {
-            // Check if the shift belongs to this worker
             boolean sameWorker = shift.getStudentWorker() != null &&
                                worker.getId() != null &&
                                shift.getStudentWorker().getId().equals(worker.getId());
             
-            // Check if the shift is in the same work week
             boolean sameWeek = shift.getDate().isSameWorkWeek(date);
             
             if (sameWorker && sameWeek) {
@@ -263,17 +358,14 @@ public class ShiftService
         double totalHours = 0;
         
         for (Shift shift : allShifts) {
-            // Skip the shift being excluded
             if (excludeShiftId != null && shift.getId() != null && shift.getId().equals(excludeShiftId)) {
                 continue;
             }
             
-            // Check if the shift belongs to this worker
             boolean sameWorker = shift.getStudentWorker() != null &&
                                worker.getId() != null &&
                                shift.getStudentWorker().getId().equals(worker.getId());
             
-            // Check if the shift is in the same work week
             boolean sameWeek = shift.getDate().isSameWorkWeek(date);
             
             if (sameWorker && sameWeek) {

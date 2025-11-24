@@ -31,8 +31,7 @@ public class SchedulePdfGenerator {
     private static final float SHIFT_FONT_SIZE = 7;
     private static final float DATE_FONT_SIZE = 12;
     
-    // Calendar grid dimensions
-    private static final int DAYS_IN_WEEK = 5; // Monday through Friday only
+    private static final int DAYS_IN_WEEK = 5;
     private static final float CELL_PADDING = 10;
     private static final float SHIFT_LINE_HEIGHT = 12;
 
@@ -51,16 +50,13 @@ public class SchedulePdfGenerator {
         }
 
         try (PDDocument document = new PDDocument()) {
-            // Ensure weeks are generated and shifts are organized
             schedule.generateWeeks();
             schedule.organizeShiftsIntoWeeks();
 
             List<Week> weeks = schedule.getWeeks();
             
-            // Build workstation color map - assign index to each unique workstation
             Map<Long, Integer> workstationColorMap = buildWorkstationColorMap(weeks);
             
-            // Create a page for each week
             for (int i = 0; i < weeks.size(); i++) {
                 PDPage page = new PDPage(PDRectangle.A4);
                 document.addPage(page);
@@ -81,7 +77,6 @@ public class SchedulePdfGenerator {
         Map<Long, Integer> colorMap = new HashMap<>();
         List<Workstation> uniqueWorkstations = new ArrayList<>();
         
-        // Collect all unique workstations from all shifts
         for (Week week : weeks) {
             for (Shift shift : week.getShifts()) {
                 Workstation ws = shift.getWorkstation();
@@ -91,7 +86,6 @@ public class SchedulePdfGenerator {
             }
         }
         
-        // Assign index to each workstation
         for (int i = 0; i < uniqueWorkstations.size(); i++) {
             colorMap.put(uniqueWorkstations.get(i).getId(), i);
         }
@@ -106,29 +100,23 @@ public class SchedulePdfGenerator {
         float pageWidth = PDRectangle.A4.getWidth();
         float pageHeight = PDRectangle.A4.getHeight();
         
-        // Draw title
         float yPosition = pageHeight - MARGIN;
         yPosition = drawTitle(cs, schedule, weekNumber, week, yPosition);
         
-        // Calculate grid dimensions
         float gridWidth = pageWidth - (2 * MARGIN);
         float cellWidth = gridWidth / DAYS_IN_WEEK;
         float headerHeight = 30;
         float gridStartY = yPosition - 20;
         
-        // Reserve space for legend at bottom
         float legendHeight = 100;
         float availableHeight = gridStartY - MARGIN - headerHeight - legendHeight;
         float cellHeight = availableHeight;
         
-        // Draw day headers (Sun, Mon, Tue, etc.)
         drawDayHeaders(cs, MARGIN, gridStartY, cellWidth, headerHeight);
         
-        // Draw calendar grid and shifts
         drawWeekGrid(cs, week, MARGIN, gridStartY - headerHeight, cellWidth, cellHeight, workstationColorMap);
         
-        // Draw workstation color legend at bottom of page
-        float legendY = MARGIN + legendHeight - 20; // Position near bottom
+        float legendY = MARGIN + legendHeight - 20;
         drawColorLegend(cs, week, MARGIN, legendY, pageWidth - (2 * MARGIN), workstationColorMap);
     }
 
@@ -136,8 +124,7 @@ public class SchedulePdfGenerator {
      * Draws the title section with schedule info and week number.
      */
     private static float drawTitle(PDPageContentStream cs, Schedule schedule, int weekNumber, Week week, float yPosition) throws IOException {
-        // Main title
-        cs.setNonStrokingColor(new Color(21, 111, 171)); // Blue color
+        cs.setNonStrokingColor(new Color(21, 111, 171));
         cs.beginText();
         cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), TITLE_FONT_SIZE);
         cs.newLineAtOffset(MARGIN, yPosition);
@@ -146,8 +133,6 @@ public class SchedulePdfGenerator {
         cs.setNonStrokingColor(Color.BLACK);
         
         yPosition -= 25;
-        
-        // Date range
         cs.beginText();
         cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), HEADER_FONT_SIZE);
         cs.newLineAtOffset(MARGIN, yPosition);
@@ -156,7 +141,6 @@ public class SchedulePdfGenerator {
         
         yPosition -= 20;
         
-        // Draw separator line
         cs.setStrokingColor(new Color(21, 111, 171));
         cs.setLineWidth(2);
         cs.moveTo(MARGIN, yPosition);
@@ -179,11 +163,9 @@ public class SchedulePdfGenerator {
         for (int i = 0; i < DAYS_IN_WEEK; i++) {
             float cellX = x + (i * cellWidth);
             
-            // Draw header background
             cs.addRect(cellX, y - headerHeight, cellWidth, headerHeight);
             cs.fill();
             
-            // Draw day name
             cs.setNonStrokingColor(Color.WHITE);
             cs.beginText();
             cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), DAY_HEADER_FONT_SIZE);
@@ -198,7 +180,6 @@ public class SchedulePdfGenerator {
         
         cs.setNonStrokingColor(Color.BLACK);
         
-        // Draw grid lines for headers
         cs.setStrokingColor(Color.WHITE);
         cs.setLineWidth(2);
         for (int i = 0; i <= DAYS_IN_WEEK; i++) {
@@ -215,7 +196,6 @@ public class SchedulePdfGenerator {
      * Draws the week grid with shifts.
      */
     private static void drawWeekGrid(PDPageContentStream cs, Week week, float x, float y, float cellWidth, float cellHeight, Map<Long, Integer> workstationColorMap) throws IOException {
-        // Group shifts by date
         Map<LocalDate, List<Shift>> shiftsByDate = new HashMap<>();
         for (Shift shift : week.getShifts()) {
             LocalDate date = LocalDate.of(
@@ -226,20 +206,16 @@ public class SchedulePdfGenerator {
             shiftsByDate.computeIfAbsent(date, k -> new ArrayList<>()).add(shift);
         }
         
-        // Get week start date (Sunday)
-        LocalDate weekStart = getWeekStartDate(week);
+        LocalDate weekStartDate = getWeekStartDate(week);
         
-        // Draw each day cell
         for (int i = 0; i < DAYS_IN_WEEK; i++) {
-            LocalDate currentDate = weekStart.plusDays(i);
+            LocalDate currentDate = weekStartDate.plusDays(i);
             float cellX = x + (i * cellWidth);
             
-            // Draw cell border
             cs.setStrokingColor(new Color(200, 200, 200));
             cs.addRect(cellX, y - cellHeight, cellWidth, cellHeight);
             cs.stroke();
             
-            // Draw date number
             cs.setNonStrokingColor(new Color(100, 100, 100));
             cs.beginText();
             cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), DATE_FONT_SIZE);
@@ -248,7 +224,6 @@ public class SchedulePdfGenerator {
             cs.endText();
             cs.setNonStrokingColor(Color.BLACK);
             
-            // Draw shifts for this day
             List<Shift> dayShifts = shiftsByDate.get(currentDate);
             if (dayShifts != null) {
                 dayShifts.sort(Comparator.comparingInt(s -> s.getTime().getStart_time()));
@@ -263,27 +238,23 @@ public class SchedulePdfGenerator {
      */
     private static void drawShiftsInCell(PDPageContentStream cs, List<Shift> shifts, float cellX, float cellY, float cellWidth, float cellHeight, Map<Long, Integer> workstationColorMap) throws IOException {
         float shiftY = cellY - CELL_PADDING - DATE_FONT_SIZE - 15;
-        float maxShiftsToShow = (int) ((cellHeight - CELL_PADDING - DATE_FONT_SIZE - 20) / (SHIFT_LINE_HEIGHT * 2)); // Each shift takes 2 lines now
+        float maxShiftsToShow = (int) ((cellHeight - CELL_PADDING - DATE_FONT_SIZE - 20) / (SHIFT_LINE_HEIGHT * 2));
         
-        // Group shifts by workstation, then sort each group by start time
         Map<Long, List<Shift>> shiftsByWorkstation = new HashMap<>();
         for (Shift shift : shifts) {
             Long workstationId = shift.getWorkstation() != null ? shift.getWorkstation().getId() : -1L;
             shiftsByWorkstation.computeIfAbsent(workstationId, k -> new ArrayList<>()).add(shift);
         }
         
-        // Sort shifts within each workstation by start time
         for (List<Shift> workstationShifts : shiftsByWorkstation.values()) {
-            workstationShifts.sort(Comparator.comparingInt(s -> s.getTime().getStart_time()));
+            workstationShifts.sort(Comparator.comparing(s -> s.getTime().getStart_time()));
         }
         
-        // Get workstations in sorted order (by workstation name for consistency)
         List<Long> sortedWorkstationIds = new ArrayList<>(shiftsByWorkstation.keySet());
         sortedWorkstationIds.sort((id1, id2) -> {
-            if (id1.equals(-1L)) return 1; // Put null workstations last
+            if (id1.equals(-1L)) return 1;
             if (id2.equals(-1L)) return -1;
             
-            // Find the workstation names to compare
             Shift shift1 = shiftsByWorkstation.get(id1).get(0);
             Shift shift2 = shiftsByWorkstation.get(id2).get(0);
             String name1 = shift1.getWorkstation() != null ? shift1.getWorkstation().getName() : "ZZZ";
@@ -293,13 +264,11 @@ public class SchedulePdfGenerator {
         
         int shiftCount = 0;
         
-        // Draw shifts grouped by workstation
         for (Long workstationId : sortedWorkstationIds) {
             List<Shift> workstationShifts = shiftsByWorkstation.get(workstationId);
             
             for (Shift shift : workstationShifts) {
                 if (shiftCount >= maxShiftsToShow) {
-                    // Show "+X more" if there are too many shifts
                     int remaining = shifts.size() - shiftCount;
                     cs.setNonStrokingColor(new Color(150, 150, 150));
                     cs.beginText();
@@ -311,7 +280,6 @@ public class SchedulePdfGenerator {
                     return;
                 }
                 
-                // Draw shift box with color based on workstation
                 Color workstationColor = getWorkstationColor(shift.getWorkstation(), workstationColorMap);
                 cs.setNonStrokingColor(workstationColor);
                 float boxHeight = (SHIFT_LINE_HEIGHT * 2.5f);
@@ -319,7 +287,6 @@ public class SchedulePdfGenerator {
                 cs.addRect(cellX + CELL_PADDING, shiftY - boxHeight, boxWidth, boxHeight);
                 cs.fill();
                 
-                // Draw shift text - Line 1: Time and Initials
                 cs.setNonStrokingColor(Color.WHITE);
                 cs.beginText();
                 cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), SHIFT_FONT_SIZE);
@@ -333,7 +300,6 @@ public class SchedulePdfGenerator {
                 cs.showText(line1);
                 cs.endText();
                 
-                // Draw shift text - Line 2: Workstation name
                 cs.setNonStrokingColor(Color.WHITE);
                 cs.beginText();
                 cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), SHIFT_FONT_SIZE - 0.5f);
@@ -342,7 +308,6 @@ public class SchedulePdfGenerator {
                 String workstationName = shift.getWorkstation() != null ?
                     shift.getWorkstation().getName() : "N/A";
                 
-                // Truncate workstation name if too long
                 if (workstationName.length() > 18) {
                     workstationName = workstationName.substring(0, 15) + "...";
                 }
@@ -365,7 +330,6 @@ public class SchedulePdfGenerator {
             return LocalDate.now();
         }
         
-        // Find the earliest date in the week
         Shift earliestShift = shifts.stream()
             .min(Comparator.comparing(s -> {
                 Date d = s.getDate();
@@ -379,7 +343,6 @@ public class SchedulePdfGenerator {
             earliestShift.getDate().get_day()
         );
         
-        // Find the previous Monday
         while (date.getDayOfWeek() != DayOfWeek.MONDAY) {
             date = date.minusDays(1);
         }
@@ -393,17 +356,17 @@ public class SchedulePdfGenerator {
      */
     private static Color getWorkstationColor(Workstation workstation, Map<Long, Integer> workstationColorMap) {
         if (workstation == null) {
-            return new Color(150, 150, 150); // Gray for no workstation
+            return new Color(150, 150, 150);
         }
         
         int colorIndex = workstationColorMap.getOrDefault(workstation.getId(), 0) % 5;
         
         switch (colorIndex) {
-            case 0: return hexToColor("#156fabff"); // Blue
-            case 1: return hexToColor("#4CAF50");   // Green
-            case 2: return hexToColor("#FF9800");   // Orange
-            case 3: return hexToColor("#9C27B0");   // Purple
-            default: return hexToColor("#F44336");  // Red
+            case 0: return hexToColor("#156fabff");
+            case 1: return hexToColor("#4CAF50");
+            case 2: return hexToColor("#FF9800");
+            case 3: return hexToColor("#9C27B0");
+            default: return hexToColor("#F44336");
         }
     }
     
@@ -411,9 +374,7 @@ public class SchedulePdfGenerator {
      * Converts hex color string to AWT Color.
      */
     private static Color hexToColor(String hex) {
-        // Remove # if present
         hex = hex.replace("#", "");
-        // Handle 8-digit hex (RGBA) by taking first 6 digits (RGB)
         if (hex.length() == 8) {
             hex = hex.substring(0, 6);
         }
@@ -428,7 +389,6 @@ public class SchedulePdfGenerator {
      * Draws a color legend showing workstation colors.
      */
     private static void drawColorLegend(PDPageContentStream cs, Week week, float x, float y, float width, Map<Long, Integer> workstationColorMap) throws IOException {
-        // Collect all unique workstations from the week
         Map<String, Workstation> workstations = new HashMap<>();
         for (Shift shift : week.getShifts()) {
             if (shift.getWorkstation() != null) {
@@ -440,10 +400,9 @@ public class SchedulePdfGenerator {
         }
         
         if (workstations.isEmpty()) {
-            return; // No legend to draw
+            return;
         }
         
-        // Draw legend title
         cs.setNonStrokingColor(Color.BLACK);
         cs.beginText();
         cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 11);
@@ -451,11 +410,9 @@ public class SchedulePdfGenerator {
         cs.showText("Workstation Color Key:");
         cs.endText();
         
-        // Sort workstation names
         List<String> sortedNames = new ArrayList<>(workstations.keySet());
         sortedNames.sort(String::compareTo);
         
-        // Draw legend items
         float itemWidth = 150;
         float itemHeight = 18;
         float itemsPerRow = Math.max(1, (int) (width / itemWidth));
@@ -467,18 +424,15 @@ public class SchedulePdfGenerator {
             Workstation workstation = workstations.get(name);
             Color color = getWorkstationColor(workstation, workstationColorMap);
             
-            // Draw color box
             cs.setNonStrokingColor(color);
             cs.addRect(currentX, currentY, 15, 15);
             cs.fill();
             
-            // Draw border around color box
             cs.setStrokingColor(Color.BLACK);
             cs.setLineWidth(0.5f);
             cs.addRect(currentX, currentY, 15, 15);
             cs.stroke();
             
-            // Draw workstation name
             cs.setNonStrokingColor(Color.BLACK);
             cs.beginText();
             cs.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
@@ -494,7 +448,6 @@ public class SchedulePdfGenerator {
             itemCount++;
             currentX += itemWidth;
             
-            // Move to next row if needed
             if (itemCount % itemsPerRow == 0) {
                 currentX = x;
                 currentY -= itemHeight;

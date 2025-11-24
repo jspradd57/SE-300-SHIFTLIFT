@@ -26,7 +26,6 @@ public class Application implements AppShellConfigurator {
                     userService.createManagerUser("admin@erau.edu", "admin");
                     System.out.println("Created default admin: admin@erau.edu / admin");
                 } catch (Exception e) {
-                    // ignore if already exists or creation fails
                 }
             }
         };

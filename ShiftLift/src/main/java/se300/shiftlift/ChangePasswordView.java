@@ -23,69 +23,64 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
     private final UserService userService;
     private final ScheduleService scheduleService;
 
+    /**
+     * Constructs the change password view with drawer navigation and password change form.
+     * Initializes the layout with drawer menu based on user role, header with logout button,
+     * and password change fields with validation.
+     */
     public ChangePasswordView(UserService userService, ScheduleService scheduleService) {
         this.userService = userService;
         this.scheduleService = scheduleService;
         
         boolean admin = Auth.isAdmin();
         
-        // Create styled drawer menu
         VerticalLayout drawerLayout = new VerticalLayout();
         drawerLayout.setPadding(true);
         drawerLayout.setSpacing(true);
         
         if(admin){
-            // Routes that will be in the hamburger for navigation
             RouterLink viewPendingScheduleLink = new RouterLink("View Pending Schedule", MainMenuView.class);
             RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
             RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
             RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
-            // Apply styling to each link
             styleRouterLink(viewPendingScheduleLink);
             styleRouterLink(viewPublishedScheduleLink);
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
             styleRouterLink(manageSchedulesLink);
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, downloadPdfButton, changePasswordLink);
         }
         else{
             RouterLink viewPendingScheduleLink = new RouterLink("View Pending Schedule", MainMenuView.class);
             RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
             styleRouterLink(viewPendingScheduleLink);
             styleRouterLink(viewPublishedScheduleLink);
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, downloadPdfButton, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
         
-        // Set drawer closed by default
         setDrawerOpened(false);
 
-        // Creates a hamburger for navigation to other tabs
         DrawerToggle toggle = new DrawerToggle();
         toggle.getStyle()
             .set("color", "#156fabff")
             .set("background-color", "#f5f5f5")
             .set("border-radius", "4px");
 
-        // Logout Button
         Button logoutBtn = new Button("Logout");
         logoutBtn.getStyle()
             .set("color", "#666666")
@@ -93,7 +88,6 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
             .set("margin-right", "20px");
         logoutBtn.addClickListener(e -> Auth.logoutToLogin());
 
-        // Title for navbar
         H2 navTitle = new H2("Change Password");
         navTitle.getStyle()
                .set("color", "#156fabff")
@@ -101,7 +95,6 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
                .set("margin", "0")
                .set("font-size", "24px");
 
-        // Navbar layout (this is the header)
         var header = new HorizontalLayout(toggle, navTitle, logoutBtn);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
@@ -113,7 +106,6 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
             .set("padding", "16px 20px");
         addToNavbar(header);
 
-        // Create content layout
         VerticalLayout contentLayout = new VerticalLayout();
         contentLayout.setSizeFull();
         contentLayout.setPadding(true);
@@ -145,7 +137,6 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
 
         contentLayout.add(form);
         
-        // Set content for AppLayout
         setContent(contentLayout);
 
         saveBtn.addClickListener(e -> {
@@ -180,6 +171,12 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
         cancelBtn.addClickListener(e -> getUI().ifPresent(ui -> ui.navigate(MainMenuView.class)));
     }
     
+    /**
+     * Applies consistent styling to navigation links in the drawer menu.
+     * Sets color, font, padding, and display properties for drawer navigation.
+     * 
+     * @param link RouterLink to be styled
+     */
     private void styleRouterLink(RouterLink link) {
         link.getStyle()
             .set("color", "#156fabff")
@@ -190,6 +187,12 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
             .set("font-size", "16px");
     }
 
+    /**
+     * Validates user authentication before allowing access to the view.
+     * Redirects to login page if user is not authenticated.
+     * 
+     * @param event navigation event containing routing information
+     */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         if (!Auth.isLoggedIn()) {
@@ -197,6 +200,13 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
         }
     }
     
+    /**
+     * Creates a button for downloading the latest published schedule as a PDF.
+     * Finds the most recent published schedule, generates a PDF file, and triggers browser download.
+     * Shows notifications for success or error conditions.
+     * 
+     * @return styled download button with click handler
+     */
     private Button createDownloadPdfButton() {
         Button downloadButton = new Button("Download PDF");
         downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -210,7 +220,6 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
         
         downloadButton.addClickListener(e -> {
             try {
-                // Find the latest published schedule
                 java.util.List<Schedule> allSchedules = scheduleService.getAllSchedules();
                 java.util.Optional<Schedule> latestPublished = allSchedules.stream()
                     .filter(s -> s.getApproved() != null && s.getApproved())
@@ -226,12 +235,10 @@ public class ChangePasswordView extends AppLayout implements BeforeEnterObserver
                 Schedule schedule = latestPublished.get();
                 scheduleService.loadShiftsForSchedule(schedule);
                 
-                // Generate PDF to temporary file
                 String tempDir = System.getProperty("java.io.tmpdir");
                 String pdfPath = tempDir + "/schedule-" + schedule.getId() + ".pdf";
                 SchedulePdfGenerator.generateSchedulePdf(schedule, pdfPath);
                 
-                // Trigger download
                 java.io.File pdfFile = new java.io.File(pdfPath);
                 com.vaadin.flow.server.StreamResource resource = 
                     new com.vaadin.flow.server.StreamResource("schedule.pdf", 

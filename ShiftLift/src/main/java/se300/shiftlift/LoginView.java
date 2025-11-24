@@ -18,14 +18,20 @@ public class LoginView extends VerticalLayout {
     @SuppressWarnings("unused")
     private final UserRepository userRepository;
 
+    /**
+     * Constructs the login view with username/password authentication.
+     * Sets up UI elements including title, input fields, and login/forgot password buttons.
+     * 
+     * @param userRepository the repository for accessing user data
+     */
     public LoginView(UserRepository userRepository) {
         this.userRepository = userRepository;
         H1 loginTitle = new H1("ShiftLift");
         loginTitle.getStyle()
             .set("color", "#156fabff")
-            .set("font-family", "Poppins, sans-serif")  //font
-            .set("font-size", "100px")       //size
-            .set("margin-left", "center")    //position horizontally
+            .set("font-family", "Poppins, sans-serif")
+            .set("font-size", "100px")
+            .set("margin-left", "center")
             .set("margin-top", "30px");
         add(loginTitle);
         setHorizontalComponentAlignment(Alignment.CENTER, loginTitle);
@@ -33,7 +39,6 @@ public class LoginView extends VerticalLayout {
         var inputUser = new TextField("Username");
         var inputPassword = new PasswordField("Password");
         
-        // Set width for input fields
         inputUser.setWidth("300px");
         inputPassword.setWidth("300px");
         
@@ -43,7 +48,6 @@ public class LoginView extends VerticalLayout {
             .set("color", "white");
         loginButton.setWidth("300px");
         
-        // Add Enter key shortcut - pressing Enter in either field will trigger login
         inputUser.addKeyPressListener(Key.ENTER, e -> loginButton.click());
         inputPassword.addKeyPressListener(Key.ENTER, e -> loginButton.click());
             
@@ -77,9 +81,8 @@ public class LoginView extends VerticalLayout {
                 Notification.show("User not found")
                     .addThemeVariants(NotificationVariant.LUMO_ERROR);
             } else {
-                User user = users.get(0); // Get the first user (usernames should be unique)
+                User user = users.get(0);
                 if (PasswordUtil.matches(password, user.getPassword())) {
-                    // Successful login: store in session and navigate
                     Auth.setCurrentUser(user);
                     getUI().ifPresent(ui -> ui.navigate(MainMenuView.class));
                 } else {
@@ -89,7 +92,6 @@ public class LoginView extends VerticalLayout {
             }
         });
 
-        // Remove insecure change-password-from-login behavior.
         changePassword.setText("Forgot Password");
         changePassword.addClickListener(e -> {
             if (!Auth.isLoggedIn()) {

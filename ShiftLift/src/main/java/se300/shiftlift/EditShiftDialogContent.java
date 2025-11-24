@@ -36,13 +36,27 @@ public class EditShiftDialogContent extends VerticalLayout {
     private final ShiftService shiftService;
     private final ScheduleService scheduleService;
     private final Runnable onSuccess;
+    private final boolean useUnpublishedSchedule;
     
+    /**
+     * Constructs an edit shift dialog for modifying an existing shift.
+     * Loads the specified shift and initializes the form with its data.
+     * 
+     * @param userService the service for managing users
+     * @param workstationService the service for managing workstations
+     * @param shiftService the service for managing shifts
+     * @param scheduleService the service for managing schedules
+     * @param shiftId the ID of the shift to edit
+     * @param useUnpublishedSchedule if true, uses unpublished schedule dates; if false, uses published schedule dates
+     * @param onSuccess callback to run when the shift is successfully saved or dialog is closed
+     */
     public EditShiftDialogContent(
             UserService userService,
             WorkstationService workstationService,
             ShiftService shiftService,
             ScheduleService scheduleService,
             Long shiftId,
+            boolean useUnpublishedSchedule,
             Runnable onSuccess) {
         
         this.userService = userService;
@@ -50,31 +64,33 @@ public class EditShiftDialogContent extends VerticalLayout {
         this.shiftService = shiftService;
         this.scheduleService = scheduleService;
         this.currentUser = Auth.getCurrentUser();
+        this.useUnpublishedSchedule = useUnpublishedSchedule;
         this.onSuccess = onSuccess;
         
         createContent();
         loadShiftById(shiftId);
     }
     
+    /**
+     * Creates and configures all UI elements for the edit shift form.
+     * Sets up date picker, worker/workstation selectors, time inputs, and action buttons.
+     */
     private void createContent() {
         setPadding(true);
         setSpacing(true);
         setAlignItems(Alignment.STRETCH);
         setMaxWidth("600px");
         
-        // Title
         H3 title = new H3("Edit Shift");
         title.getStyle()
             .set("color", "#156fabff")
             .set("font-family", "Poppins, sans-serif")
             .set("margin", "0 0 16px 0");
         
-        // Date picker setup
         shiftDatePicker.setWidthFull();
         setDatePickerConstraints();
         shiftDatePicker.getStyle().set("font-family", "Poppins, sans-serif");
         
-        // Worker combo box
         workerComboBox.setWidthFull();
         if (Auth.isAdmin()) {
             workerComboBox.setItems(userService.list(Pageable.unpaged()));
@@ -86,7 +102,6 @@ public class EditShiftDialogContent extends VerticalLayout {
         workerComboBox.setAllowCustomValue(false);
         workerComboBox.getStyle().set("font-family", "Poppins, sans-serif");
         
-        // Workstation combo box
         workstationComboBox.setWidthFull();
         workstationComboBox.setItems(workstationService.list(Pageable.unpaged()));
         workstationComboBox.setItemLabelGenerator(Workstation::getName);
@@ -94,7 +109,6 @@ public class EditShiftDialogContent extends VerticalLayout {
         workstationComboBox.getStyle().set("font-family", "Poppins, sans-serif");
         workstationComboBox.addValueChangeListener(e -> updateTimeOptionsIfNeeded(e.getOldValue(), e.getValue()));
         
-        // Time combo boxes
         startTimeComboBox.setWidthFull();
         startTimeComboBox.setItems(generateTimeOptions());
         startTimeComboBox.setAllowCustomValue(true);
@@ -111,7 +125,6 @@ public class EditShiftDialogContent extends VerticalLayout {
         endTimeComboBox.addValueChangeListener(e -> validateTimes());
         endTimeComboBox.addCustomValueSetListener(e -> endTimeComboBox.setValue(e.getDetail()));
         
-        // Delete button
         deleteButton.setWidthFull();
         deleteButton.getStyle()
             .set("font-family", "Poppins, sans-serif")
@@ -119,7 +132,6 @@ public class EditShiftDialogContent extends VerticalLayout {
             .set("background-color", "#9b0000ff");
         deleteButton.addClickListener(e -> handleDelete());
         
-        // Save/Cancel buttons
         HorizontalLayout buttonLayout = new HorizontalLayout();
         buttonLayout.setWidthFull();
         buttonLayout.setJustifyContentMode(JustifyContentMode.CENTER);
@@ -145,6 +157,11 @@ public class EditShiftDialogContent extends VerticalLayout {
             startTimeComboBox, endTimeComboBox, deleteButton, buttonLayout);
     }
     
+    /**
+     * Loads shift data from the database by ID and populates the form.
+     * 
+     * @param shiftId the ID of the shift to load
+     */
     private void loadShiftById(Long shiftId) {
         try {
             List<Shift> allShifts = shiftService.getAllShifts();
@@ -163,6 +180,11 @@ public class EditShiftDialogContent extends VerticalLayout {
         }
     }
     
+    /**
+     * Populates the form fields with data from an existing shift.
+     * 
+     * @param shift the shift whose data should populate the form
+     */
     private void populateFormWithShift(Shift shift) {
         Date shiftDate = shift.getDate();
         shiftDatePicker.setValue(LocalDate.of(
@@ -179,14 +201,21 @@ public class EditShiftDialogContent extends VerticalLayout {
         endTimeComboBox.setValue(formatTimeForDisplay(shiftTime.getEnd_time()));
     }
     
+    /**
+     * Sets date picker constraints based on the latest published or unpublished schedule.
+     * Restricts selectable dates to the schedule's start and end dates.
+     */
     private void setDatePickerConstraints() {
         try {
-            var scheduleOpt = scheduleService.getLatestPublishedSchedule();
+            var scheduleOpt = useUnpublishedSchedule 
+                ? scheduleService.getLatestUnpublishedSchedule()
+                : scheduleService.getLatestPublishedSchedule();
             
             if (scheduleOpt.isEmpty()) {
                 shiftDatePicker.setMin(LocalDate.now().plusYears(100));
                 shiftDatePicker.setMax(LocalDate.now().plusYears(100));
-                shiftDatePicker.setHelperText("No published schedule found. Please create and publish a schedule first.");
+                String scheduleType = useUnpublishedSchedule ? "unpublished" : "published";
+                shiftDatePicker.setHelperText("No " + scheduleType + " schedule found. Please create a schedule first.");
                 return;
             }
             
@@ -214,6 +243,10 @@ public class EditShiftDialogContent extends VerticalLayout {
         }
     }
     
+    /**
+     * Handles the delete button click to remove the current shift.
+     * Shows confirmation and deletes the shift if user confirms.
+     */
     private void handleDelete() {
         if (currentShift == null) {
             Notification.show("No shift to delete", 3000, Notification.Position.MIDDLE);
@@ -229,6 +262,10 @@ public class EditShiftDialogContent extends VerticalLayout {
         }
     }
     
+    /**
+     * Handles the save button click to update or create a shift.
+     * Validates fields, checks for conflicts, and persists the shift.
+     */
     private void handleSave() {
         if (!validateFields()) {
             return;
@@ -291,6 +328,15 @@ public class EditShiftDialogContent extends VerticalLayout {
         }
     }
     
+    /**
+     * Handles workstation conflict by showing appropriate override dialog.
+     * Shows admin or senior override dialog based on user permissions.
+     * 
+     * @param shiftDate the date of the shift being created/edited
+     * @param shiftTime the time of the shift being created/edited
+     * @param currentWorker the worker for whom the shift is being created/edited
+     * @param excludeShiftId ID of the shift being edited (to exclude from conflict checks)
+     */
     private void handleWorkstationConflict(Date shiftDate, Time shiftTime, User currentWorker, Long excludeShiftId) {
         Shift conflictingShift = shiftService.getConflictingShift(workstationComboBox.getValue(), shiftDate, shiftTime);
         
@@ -308,6 +354,16 @@ public class EditShiftDialogContent extends VerticalLayout {
         }
     }
     
+    /**
+     * Shows admin override dialog for workstation conflicts.
+     * Allows admin to reassign conflicting worker or delete their shift if no workstations available.
+     * 
+     * @param shiftDate the date of the shift being created/edited
+     * @param shiftTime the time of the shift being created/edited
+     * @param currentWorker the worker for whom the shift is being created/edited
+     * @param conflictingShift the existing shift causing the conflict
+     * @param conflictingWorker the worker with the conflicting shift
+     */
     private void showAdminOverrideDialog(Date shiftDate, Time shiftTime, User currentWorker,
                                         Shift conflictingShift, User conflictingWorker) {
         Long availableWorkstationId = shiftService.workstationAvailable(shiftDate, shiftTime);
@@ -369,6 +425,16 @@ public class EditShiftDialogContent extends VerticalLayout {
         dialog.open();
     }
     
+    /**
+     * Shows senior override dialog for workstation conflicts.
+     * Allows senior workers to take workstation if another workstation is available for reassignment.
+     * 
+     * @param shiftDate the date of the shift being created/edited
+     * @param shiftTime the time of the shift being created/edited
+     * @param currentWorker the worker for whom the shift is being created/edited
+     * @param conflictingShift the existing shift causing the conflict
+     * @param conflictingWorker the worker with the conflicting shift
+     */
     private void showSeniorOverrideDialog(Date shiftDate, Time shiftTime, User currentWorker,
                                          Shift conflictingShift, User conflictingWorker) {
         Long availableWorkstationId = shiftService.workstationAvailable(shiftDate, shiftTime);
@@ -418,6 +484,12 @@ public class EditShiftDialogContent extends VerticalLayout {
         }
     }
     
+    /**
+     * Validates that all required fields have values selected.
+     * Shows notifications for missing fields and validates time consistency.
+     * 
+     * @return true if all fields are valid, false otherwise
+     */
     private boolean validateFields() {
         if (shiftDatePicker.getValue() == null) {
             Notification.show("Please select a date", 3000, Notification.Position.MIDDLE);
@@ -442,6 +514,12 @@ public class EditShiftDialogContent extends VerticalLayout {
         return validateTimes();
     }
     
+    /**
+     * Validates that start and end times are logically consistent.
+     * Checks that start is before end and both are within workstation operating hours.
+     * 
+     * @return true if times are valid, false otherwise
+     */
     private boolean validateTimes() {
         if (startTimeComboBox.getValue() == null || endTimeComboBox.getValue() == null) {
             return true;
@@ -476,6 +554,12 @@ public class EditShiftDialogContent extends VerticalLayout {
         return true;
     }
     
+    /**
+     * Generates a list of time options for the time selection dropdowns.
+     * Creates 30-minute intervals between opening and closing times.
+     * 
+     * @return list of time strings in HH:mm format
+     */
     private List<String> generateTimeOptions() {
         List<String> timeOptions = new ArrayList<>();
         int startHour = Time.OPENING_TIME / 100;
@@ -490,6 +574,14 @@ public class EditShiftDialogContent extends VerticalLayout {
         return timeOptions;
     }
     
+    /**
+     * Generates time options specific to a workstation's operating hours.
+     * Creates 30-minute intervals between the workstation's start and end times.
+     * 
+     * @param startTime the workstation's opening time
+     * @param endTime the workstation's closing time
+     * @return list of time strings in HH:mm format
+     */
     private List<String> generateTimeOptionsForWorkstation(int startTime, int endTime) {
         List<String> timeOptions = new ArrayList<>();
         int currentTime = startTime;
@@ -514,6 +606,13 @@ public class EditShiftDialogContent extends VerticalLayout {
         return timeOptions;
     }
     
+    /**
+     * Updates time dropdown options when workstation selection changes.
+     * Adjusts available times to match the new workstation's operating hours.
+     * 
+     * @param oldWorkstation the previously selected workstation (unused but required by listener)
+     * @param newWorkstation the newly selected workstation
+     */
     private void updateTimeOptionsIfNeeded(Workstation oldWorkstation, Workstation newWorkstation) {
         String currentStartTime = startTimeComboBox.getValue();
         String currentEndTime = endTimeComboBox.getValue();
@@ -566,12 +665,25 @@ public class EditShiftDialogContent extends VerticalLayout {
         }
     }
     
+    /**
+     * Formats an integer time value to a display string.
+     * 
+     * @param time the time value (e.g., 800 for 8:00, 1730 for 17:30)
+     * @return the formatted time string in HH:mm format
+     */
     private String formatTimeForDisplay(int time) {
         int hours = time / 100;
         int minutes = time % 100;
         return String.format("%02d:%02d", hours, minutes);
     }
     
+    /**
+     * Parses a time string into an integer time value.
+     * Returns the default opening time if the string is null or empty.
+     * 
+     * @param timeStr the time string in HH:mm format
+     * @return the integer time value (e.g., 800 for 8:00)
+     */
     private int parseTimeFromString(String timeStr) {
         if (timeStr == null || timeStr.isEmpty()) {
             return Time.OPENING_TIME;

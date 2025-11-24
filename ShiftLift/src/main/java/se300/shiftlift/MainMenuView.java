@@ -41,14 +41,19 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     private Schedule currentSchedule;
     private int currentWeekIndex = 0;
     private List<Week> availableWeeks;
-    private H3 weekLabel;
-    private HorizontalLayout calendarHeader;
+    private final H3 weekLabel;
+    private final HorizontalLayout calendarHeader;
     private Component scheduleGrid;
     
     private final WorkstationService workstationService;
-    private int workstationCount = 5; // Default fallback
+    private int workstationCount = 5;
     private java.util.Map<Long, Integer> workstationColorMap = new java.util.HashMap<>();
     
+    /**
+     * Constructor initializes the main menu view with pending schedule display and navigation.
+     * Sets up workstation color mapping, loads current unpublished schedule, creates drawer menu,
+     * and initializes the calendar grid interface.
+     */
     public MainMenuView(ScheduleService scheduleService, ShiftService shiftService, 
                        WorkstationService workstationService, UserService userService) {
         this.scheduleService = scheduleService;
@@ -57,31 +62,26 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
         this.userService = userService;
         boolean admin = Auth.isAdmin();
         
-        // Get dynamic workstation count
         try {
             long count = workstationService.count();
-            this.workstationCount = Math.max(1, (int) count); // Ensure at least 1
+            this.workstationCount = Math.max(1, (int) count);
             
-            // Build color map for workstations - get all workstations using unpaged query
             org.springframework.data.domain.Pageable unpaged = org.springframework.data.domain.Pageable.unpaged();
             List<Workstation> allWorkstations = workstationService.list(unpaged);
             for (int i = 0; i < allWorkstations.size(); i++) {
                 workstationColorMap.put(allWorkstations.get(i).getId(), i);
             }
         } catch (Exception e) {
-            this.workstationCount = 5; // Fallback to 5 if error
+            this.workstationCount = 5;
         }
         
-        // Load current unpublished schedule
         loadCurrentSchedule();
         
-        // Create styled drawer menu
         VerticalLayout drawerLayout = new VerticalLayout();
         drawerLayout.setPadding(true);
         drawerLayout.setSpacing(true);
         
         if(admin){
-            // Routes that will be in the hamburger for navigation
             RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
             RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
@@ -94,8 +94,6 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             
             Button downloadPdfButton = createDownloadPdfButton();
             Button downloadHoursReportButton = createDownloadHoursReportButton();
-            
-            // Apply styling to each link
             styleRouterLink(viewPublishedScheduleLink);
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
@@ -122,17 +120,14 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
         
         addToDrawer(drawerLayout);
         
-        // Set drawer open by default on main menu
         setDrawerOpened(true);
 
-        // Creates a hamburger for navigation to other tabs
         DrawerToggle toggle = new DrawerToggle();
         toggle.getStyle()
             .set("color", "#156fabff")
             .set("background-color", "#f5f5f5")
             .set("border-radius", "4px");
 
-        // Logout Button
         Button logoutBtn = new Button("Logout");
         logoutBtn.getStyle()
             .set("color", "#666666")
@@ -140,7 +135,6 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             .set("margin-right", "20px");
         logoutBtn.addClickListener(e -> Auth.logoutToLogin());
 
-        // Title for navbar
         H2 navTitle = new H2("Pending Schedule");
         navTitle.getStyle()
                .set("color", "#156fabff")
@@ -148,7 +142,6 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
                .set("margin", "0")
                .set("font-size", "24px");
 
-        // Navbar layout (this is the header)
         var header = new HorizontalLayout(toggle, navTitle, logoutBtn);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(Alignment.CENTER);
@@ -160,9 +153,6 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             .set("padding", "16px 20px");
         addToNavbar(header);
 
-
-
-        // week navigation
         Button prevWeek = new Button(new Icon(VaadinIcon.ANGLE_LEFT));
         Button nextWeek = new Button(new Icon(VaadinIcon.ANGLE_RIGHT));
         
@@ -180,7 +170,6 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
         weekHeader.setJustifyContentMode(JustifyContentMode.BETWEEN);
         weekHeader.setWidthFull();
 
-        // calendar header (below weekHeader)
         calendarHeader = new HorizontalLayout();
         calendarHeader.getStyle().set("padding-left", "40px");
         calendarHeader.setWidthFull();
@@ -191,51 +180,50 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
 
         scheduleGrid = createScheduleGrid();
         
-        // Create color key/legend for workstations
         Component colorKey = createColorKey();
 
-        // Place headers into the AppLayout content area
         VerticalLayout content = new VerticalLayout(weekHeader, calendarHeader, scheduleGrid, colorKey);
         content.setWidthFull();
         content.setAlignItems(Alignment.CENTER);
-        // top 10px, right 60px, bottom 0px, left 60px
         content.getStyle().set("padding", "10px 60px 0 60px");
         content.getStyle().set("box-sizing", "border-box");
-        content.setPadding(false); //we've set padding via CSS
+        content.setPadding(false);
         content.setSpacing(true);
         setContent(content);
         
-        // Update display with current week data
         updateWeekDisplay();
     }
 
+    /**
+     * Creates the visual schedule grid component with time axis and day columns.
+     * Displays shifts as colored blocks positioned by workstation and time.
+     * Days outside the schedule period are greyed out and non-clickable.
+     */
     private Component createScheduleGrid() {
-    // Whole grid area under the day labels
     HorizontalLayout grid = new HorizontalLayout();
     grid.setWidthFull();
-    grid.setHeight("720px"); // 18 half-hour slots × 40px per slot
+    grid.setHeight("720px");
     grid.getStyle()
         .set("border", "1px solid #e0e0e0")
         .set("box-sizing", "border-box")
-        .set("overflow", "hidden");          //clip anything outside
+        .set("overflow", "hidden");
     grid.setSpacing(false);
     grid.setPadding(false);
 
-    //Left time axis
     VerticalLayout timeColumn = new VerticalLayout();
     timeColumn.setWidth("40px");
     timeColumn.setPadding(false);
     timeColumn.setSpacing(false);
-    timeColumn.setHeightFull();              //same height as grid
+    timeColumn.setHeightFull();
     timeColumn.getStyle().set("border-right", "1px solid #e0e0e0");
 
-    LocalTime startTime = LocalTime.of(8, 0);   //first label (8am)
-    LocalTime endTime   = LocalTime.of(17, 0);  //last label (5pm)
-    int slotMinutes = 30;                       //30-minute (half-hour) steps
-    int pxPerSlot = 40;                         //must match addShiftBlock
+    LocalTime startTime = LocalTime.of(8, 0);
+    LocalTime endTime   = LocalTime.of(17, 0);
+    int slotMinutes = 30;
+    int pxPerSlot = 40;
 
     for (LocalTime t = startTime; !t.isAfter(endTime); t = t.plusMinutes(slotMinutes)) {
-        Span label = new Span(t.toString());    //08:00, 08:30, 09:00, etc...
+        Span label = new Span(t.toString());
         label.getStyle()
              .set("font-size", "11px")
              .set("height", pxPerSlot + "px")
@@ -247,11 +235,9 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
 
     grid.add(timeColumn);
 
-    //day columns (5 days)
     for (int dayIndex = 0; dayIndex < 5; dayIndex++) {
-        final int finalDayIndex = dayIndex; // Make final for lambda usage
+        final int finalDayIndex = dayIndex;
         
-        // Check if this day is within the schedule
         boolean isDayInSchedule = isDayWithinSchedule(finalDayIndex);
         
         final String originalBgColor = isDayInSchedule ? 
@@ -266,14 +252,12 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
               .set("background-color", originalBgColor)
               .set("cursor", isDayInSchedule ? "pointer" : "default")
               .set("transition", "background-color 0.2s ease")
-              .set("overflow", "hidden") // clip bars inside each column
+              .set("overflow", "hidden")
               .set("opacity", isDayInSchedule ? "1" : "0.5");
         
-        // Add tooltip and interactions only for days in schedule
         if (isDayInSchedule) {
             dayCol.getElement().setAttribute("title", "Click to create a new shift for this day");
             
-            // Add hover effect
             dayCol.getElement().addEventListener("mouseenter", e -> {
                 dayCol.getStyle().set("background-color", "#e3f2fd");
             });
@@ -281,7 +265,6 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
                 dayCol.getStyle().set("background-color", originalBgColor);
             });
             
-            // Add single-click listener to open NewShift dialog with selected date
             dayCol.getElement().addEventListener("click", e -> {
                 openNewShiftDialogForDay(finalDayIndex);
             });
@@ -289,9 +272,8 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             dayCol.getElement().setAttribute("title", "This day is outside the schedule period");
         }
         
-        dayCol.setHeightFull();           // same height as grid
+        dayCol.setHeightFull();
 
-        // Load real shifts for this day from unpublished schedule
         loadUnpublishedShiftsForDay(dayCol, finalDayIndex);
 
         grid.add(dayCol);
@@ -300,6 +282,10 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     return grid;
 }
 
+/**
+ * Creates a visual legend showing the color coding for each workstation.
+ * Displays colored boxes with workstation names for reference.
+ */
 private Component createColorKey() {
     VerticalLayout keyContainer = new VerticalLayout();
     keyContainer.setPadding(false);
@@ -357,7 +343,6 @@ private Component createColorKey() {
             keyItems.add(keyItem);
         }
     } catch (Exception e) {
-        // If error, show a simple message
         Span errorMsg = new Span("Unable to load workstation colors");
         errorMsg.getStyle().set("color", "#999");
         keyItems.add(errorMsg);
@@ -368,6 +353,11 @@ private Component createColorKey() {
 }
 
 
+/**
+ * Adds a visual shift block to a day column at the specified time and workstation position.
+ * Calculates precise pixel positioning based on time and workstation index.
+ * Includes hover effects and click listeners for editing shifts.
+ */
     private void addShiftBlock(Div dayCol,
                            LocalTime shiftStart,
                            LocalTime shiftEnd,
@@ -375,17 +365,15 @@ private Component createColorKey() {
                            String workerInitials,
                            Shift shift) {
 
-    LocalTime gridStart = LocalTime.of(8, 0); // 👈 match startTime above (8am)
-    int slotMinutes = 30;  // Match the 30-minute time axis slots
+    LocalTime gridStart = LocalTime.of(8, 0);
+    int slotMinutes = 30;
     int pxPerSlot   = 40;
     
-    // Calculate pixels per minute for granular positioning
     double pxPerMinute = pxPerSlot / (double) slotMinutes;
 
     int minutesFromStart = (int)Duration.between(gridStart, shiftStart).toMinutes();
     int durationMinutes  = (int)Duration.between(shiftStart, shiftEnd).toMinutes();
 
-    // Use minute-level precision for positioning
     double topPx    = minutesFromStart * pxPerMinute;
     double heightPx = durationMinutes * pxPerMinute;
 
@@ -413,7 +401,6 @@ private Component createColorKey() {
          .set("font-size", "clamp(8px, 0.9vw, 24px)")
          .set("text-align", "center");
     
-    // Add hover effects
     block.getElement().addEventListener("mouseenter", e -> {
         block.getStyle()
              .set("transform", "scale(1.05)")
@@ -425,32 +412,26 @@ private Component createColorKey() {
              .set("box-shadow", "0 1px 3px rgba(0, 0, 0, 0.2)");
     });
     
-    // Add click listener to open EditShift dialog
     if (shift != null && shift.getId() != null) {
-        // Only add click listener if user has permission to edit
         if(shift.getStudentWorker() != null && 
            (shift.getStudentWorker().getId().equals(Auth.getCurrentUser().getId()) || Auth.isAdmin())) {
             block.getElement().addEventListener("click", e -> {
                 openEditShiftDialog(shift.getId());
             }).addEventData("event.stopPropagation()");
             
-            // Add tooltip
             block.getElement().setAttribute("title", "Click to edit this shift");
         } else {
-            // Prevent click from bubbling to dayCol for non-editable shifts
             block.getElement().addEventListener("click", e -> {
                 Notification notification = Notification.show("You do not have permission to edit this shift");
                 notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
                 notification.setDuration(3000);
                 notification.setPosition(Notification.Position.TOP_CENTER);
             }).addEventData("event.stopPropagation()");
-            // Different cursor and tooltip for non-editable shifts
             block.getStyle().set("cursor", "default");
             block.getElement().setAttribute("title", "You cannot edit this shift");
         }
     }
     
-    // Add worker initials as text content
     if (workerInitials != null && !workerInitials.trim().isEmpty()) {
         block.setText(workerInitials);
     }
@@ -458,8 +439,11 @@ private Component createColorKey() {
     dayCol.add(block);
 }
 
+/**
+ * Returns the color associated with a workstation index.
+ * Cycles through 5 predefined colors if there are more workstations than colors.
+ */
 private String getWorkstationColor(int idx) {
-    // Cycle through colors if there are more workstations than colors
     int colorIndex = idx % 5;
     switch (colorIndex) {
         case 0: return "#156fabff";
@@ -470,6 +454,10 @@ private String getWorkstationColor(int idx) {
     }
 }
 
+/**
+ * Loads the latest unpublished schedule from the database and generates its weeks.
+ * Initializes availableWeeks and currentSchedule for display.
+ */
 private void loadCurrentSchedule() {
     try {
         var scheduleOpt = scheduleService.getLatestUnpublishedSchedule();
@@ -480,7 +468,6 @@ private void loadCurrentSchedule() {
             availableWeeks = currentSchedule.getWeeks();
             currentWeekIndex = 0;
         } else {
-            // No unpublished schedule found
             availableWeeks = new ArrayList<>();
             currentSchedule = null;
         }
@@ -490,6 +477,10 @@ private void loadCurrentSchedule() {
     }
 }
 
+/**
+ * Navigates to a different week in the schedule by the specified direction offset.
+ * Updates the display to show shifts for the new week.
+ */
 private void navigateWeek(int direction) {
     if (availableWeeks == null || availableWeeks.isEmpty()) {
         return;
@@ -502,6 +493,10 @@ private void navigateWeek(int direction) {
     }
 }
 
+/**
+ * Updates the week label and calendar header to display the current week's dates.
+ * Handles cases where no schedule exists or weeks are not available.
+ */
 private void updateWeekDisplay() {
     if (currentSchedule == null) {
         weekLabel.setText("No Unpublished Schedule Found");
@@ -510,26 +505,27 @@ private void updateWeekDisplay() {
         return;
     }
     
-    // Always show the full unpublished schedule date range
     String scheduleStart = formatDate(currentSchedule.getStartDate());
     String scheduleEnd = formatDate(currentSchedule.getEndDate());
     weekLabel.setText(scheduleStart + " - " + scheduleEnd);
     
     if (availableWeeks == null || availableWeeks.isEmpty()) {
-        // Generate dates for the first week of the schedule
         String[] scheduleWeekDates = getScheduleWeekDates();
         updateCalendarHeader(scheduleWeekDates);
         updateScheduleGrid();
         return;
     }
     
-    // Get dates for the current week (Monday-Friday)
     Week currentWeek = availableWeeks.get(currentWeekIndex);
     String[] weekDates = getWeekDates(currentWeek);
     updateCalendarHeader(weekDates);
     updateScheduleGrid();
 }
 
+/**
+ * Converts a Week object to an array of formatted date strings for Monday through Friday.
+ * Returns dates in M/D/YY format.
+ */
 private String[] getWeekDates(Week week) {
     String[] dates = new String[5];
     Date startDate = week.getWeekStartDate();
@@ -552,6 +548,10 @@ private String[] getWeekDates(Week week) {
     return dates;
 }
 
+/**
+ * Generates date strings for the first week of the schedule period.
+ * Used when Week objects are not available. Finds the first Monday on or after schedule start.
+ */
 private String[] getScheduleWeekDates() {
     String[] dates = new String[5];
     
@@ -562,7 +562,6 @@ private String[] getScheduleWeekDates() {
         return dates;
     }
     
-    // Use the schedule's start date to find the first Monday
     Date scheduleStart = currentSchedule.getStartDate();
     java.time.LocalDate localStart = java.time.LocalDate.of(
         scheduleStart.get_year(), 
@@ -570,7 +569,6 @@ private String[] getScheduleWeekDates() {
         scheduleStart.get_day()
     );
     
-    // Find the first Monday on or after the schedule start date
     java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.MONDAY));
     
     for (int i = 0; i < 5; i++) {
@@ -585,6 +583,10 @@ private String[] getScheduleWeekDates() {
     return dates;
 }
 
+/**
+ * Updates the calendar header row with day names and formatted dates.
+ * Applies responsive font sizing and styling to each day column.
+ */
 private void updateCalendarHeader(String[] dates) {
     calendarHeader.removeAll();
     
@@ -593,7 +595,6 @@ private void updateCalendarHeader(String[] dates) {
         dayCol.setWidth("20%");
         
         H4 dayName = new H4(days[i]);
-        // Use responsive font sizing with clamp: min 10px, preferred 1.2vw, max 20px
         dayName.getStyle()
             .set("font-size", "clamp(10px, 1.2vw, 20px)")
             .set("margin", "0")
@@ -604,7 +605,6 @@ private void updateCalendarHeader(String[] dates) {
             .set("color", "#156fabff");
         
         Span date = new Span(dates[i]);
-        // Date also scales responsively but slightly smaller
         date.getStyle()
             .set("font-size", "clamp(8px, 1vw, 16px)")
             .set("white-space", "nowrap")
@@ -628,6 +628,10 @@ private void updateCalendarHeader(String[] dates) {
     }
 }
 
+/**
+ * Recreates the schedule grid component and replaces it in the content layout.
+ * Called when the displayed week changes or shifts are modified.
+ */
 private void updateScheduleGrid() {
     VerticalLayout content = (VerticalLayout) getContent();
     if (content != null && scheduleGrid != null) {
@@ -637,6 +641,10 @@ private void updateScheduleGrid() {
     }
 }
 
+/**
+ * Determines if a day at the given index (0-4 for Mon-Fri) falls within the schedule period.
+ * Returns false if the day is outside the schedule's start and end dates.
+ */
 private boolean isDayWithinSchedule(int dayIndex) {
     if (currentSchedule == null) {
         return false;
@@ -681,6 +689,10 @@ private boolean isDayWithinSchedule(int dayIndex) {
     }
 }
 
+/**
+ * Loads and displays shift blocks for a specific day column.
+ * Retrieves unpublished shifts matching the target date and adds visual blocks to the column.
+ */
 private void loadUnpublishedShiftsForDay(Div dayCol, int dayIndex) {
     if (currentSchedule == null) {
         return;
@@ -690,7 +702,6 @@ private void loadUnpublishedShiftsForDay(Div dayCol, int dayIndex) {
         java.time.LocalDate targetDate;
         
         if (availableWeeks != null && !availableWeeks.isEmpty()) {
-            // Use week-based calculation
             Week currentWeek = availableWeeks.get(currentWeekIndex);
             Date startDate = currentWeek.getWeekStartDate();
             java.time.LocalDate localStart = java.time.LocalDate.of(
@@ -700,7 +711,6 @@ private void loadUnpublishedShiftsForDay(Div dayCol, int dayIndex) {
             java.time.LocalDate monday = localStart.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
             targetDate = monday.plusDays(dayIndex);
         } else {
-            // Use schedule start date for calculation
             Date scheduleStart = currentSchedule.getStartDate();
             java.time.LocalDate localStart = java.time.LocalDate.of(
                 scheduleStart.get_year(), 
@@ -708,7 +718,6 @@ private void loadUnpublishedShiftsForDay(Div dayCol, int dayIndex) {
                 scheduleStart.get_day()
             );
             
-            // Find the first Monday on or after the schedule start date
             java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.MONDAY));
             targetDate = firstMonday.plusDays(dayIndex);
         }
@@ -719,7 +728,6 @@ private void loadUnpublishedShiftsForDay(Div dayCol, int dayIndex) {
             targetDate.getYear()
         );
         
-        // Get unpublished shifts for this specific date
         List<Shift> dayShifts = getUnpublishedShiftsForDate(targetDateObj);
         
         for (Shift shift : dayShifts) {
@@ -727,12 +735,14 @@ private void loadUnpublishedShiftsForDay(Div dayCol, int dayIndex) {
         }
         
     } catch (Exception e) {
-        // Handle errors silently
     }
 }
 
+/**
+ * Retrieves shifts matching a specific date within the current unpublished schedule.
+ * Filters all shifts by date and schedule period.
+ */
 private List<Shift> getUnpublishedShiftsForDate(Date targetDate) {
-    // Get shifts within the current unpublished schedule's date range
     if (currentSchedule == null) {
         return new ArrayList<>();
     }
@@ -745,6 +755,10 @@ private List<Shift> getUnpublishedShiftsForDate(Date targetDate) {
         .toList();
 }
 
+/**
+ * Checks if a date falls within a schedule's start and end date range.
+ * Compares integer representations of dates.
+ */
 private boolean dateIsWithinSchedule(Date date, Schedule schedule) {
     if (schedule.getStartDate() == null || schedule.getEndDate() == null) {
         return false;
@@ -757,6 +771,10 @@ private boolean dateIsWithinSchedule(Date date, Schedule schedule) {
     return dateInt >= startInt && dateInt <= endInt;
 }
 
+/**
+ * Creates a visual shift block from a Shift entity.
+ * Extracts time, workstation, and worker information to position and style the block.
+ */
 private void addShiftBlockFromShift(Div dayCol, Shift shift) {
     if (shift.getTime() == null || shift.getWorkstation() == null) {
         return;
@@ -770,7 +788,6 @@ private void addShiftBlockFromShift(Div dayCol, Shift shift) {
     
     int workstationIndex = getWorkstationColorIndex(shift.getWorkstation().getId());
     
-    // Get worker initials
     String workerInitials = "";
     if (shift.getStudentWorker() != null && shift.getStudentWorker().getInitials() != null) {
         workerInitials = shift.getStudentWorker().getInitials();
@@ -779,14 +796,21 @@ private void addShiftBlockFromShift(Div dayCol, Shift shift) {
     addShiftBlock(dayCol, shiftStart, shiftEnd, workstationIndex, workerInitials, shift);
 }
 
+/**
+ * Gets the consistent color index for a workstation ID using the color map.
+ * Ensures the same workstation always displays with the same color.
+ */
 private int getWorkstationColorIndex(Long workstationId) {
     if (workstationId == null) {
         return 0;
     }
-    // Use the color map to get consistent color index for each workstation
     return workstationColorMap.getOrDefault(workstationId, 0);
 }
 
+/**
+ * Formats a Date object as a string in M/D/YYYY format.
+ * Returns "N/A" if date is null.
+ */
 private String formatDate(Date date) {
     if (date == null) return "N/A";
     return String.format("%d/%d/%04d", 
@@ -796,6 +820,10 @@ private String formatDate(Date date) {
     );
 }
 
+/**
+ * Opens a dialog for creating a new shift with an optional pre-selected date.
+ * Refreshes the schedule grid after the shift is saved.
+ */
 private void openNewShiftDialog(java.time.LocalDate selectedDate) {
     Dialog dialog = new Dialog();
     dialog.setModal(true);
@@ -805,7 +833,7 @@ private void openNewShiftDialog(java.time.LocalDate selectedDate) {
     dialog.setMaxWidth("90vw");
     
     NewShiftDialogContent content = new NewShiftDialogContent(
-        userService, workstationService, shiftService, scheduleService, selectedDate,
+        userService, workstationService, shiftService, scheduleService, selectedDate, true,
         () -> {
             dialog.close();
             updateScheduleGrid();
@@ -816,6 +844,10 @@ private void openNewShiftDialog(java.time.LocalDate selectedDate) {
     dialog.open();
 }
 
+/**
+ * Opens the new shift dialog with the date calculated from a day column index (0-4).
+ * Determines the target date based on the current week being displayed.
+ */
 private void openNewShiftDialogForDay(int dayIndex) {
     try {
         java.time.LocalDate targetDate;
@@ -837,7 +869,6 @@ private void openNewShiftDialogForDay(int dayIndex) {
                 scheduleStart.get_day()
             );
             
-            // Find the first Monday on or after the schedule start date
             java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.MONDAY));
             targetDate = firstMonday.plusDays(dayIndex);
         } else {
@@ -850,6 +881,10 @@ private void openNewShiftDialogForDay(int dayIndex) {
     }
 }
 
+/**
+ * Opens a dialog for editing an existing shift identified by its ID.
+ * Refreshes the schedule grid after the shift is updated or deleted.
+ */
 private void openEditShiftDialog(Long shiftId) {
     Dialog dialog = new Dialog();
     dialog.setModal(true);
@@ -859,7 +894,7 @@ private void openEditShiftDialog(Long shiftId) {
     dialog.setMaxWidth("90vw");
     
     EditShiftDialogContent content = new EditShiftDialogContent(
-        userService, workstationService, shiftService, scheduleService, shiftId,
+        userService, workstationService, shiftService, scheduleService, shiftId, true,
         () -> {
             dialog.close();
             updateScheduleGrid();
@@ -870,6 +905,10 @@ private void openEditShiftDialog(Long shiftId) {
     dialog.open();
 }
 
+/**
+ * Applies consistent styling to buttons in the navigation drawer.
+ * Sets Poppins font, blue color, and transparent background.
+ */
 private void styleButton(Button button) {
     button.getStyle()
         .set("color", "#156fabff")
@@ -884,6 +923,10 @@ private void styleButton(Button button) {
         .set("text-align", "left");
 }
 
+/**
+ * Applies consistent styling to router links in the navigation drawer.
+ * Sets Poppins font, blue color, and removes default underline.
+ */
 private void styleRouterLink(RouterLink link) {
     link.getStyle()
         .set("color", "#156fabff")
@@ -894,6 +937,10 @@ private void styleRouterLink(RouterLink link) {
         .set("font-size", "16px");
 }
 
+/**
+ * Creates a button that generates and downloads a PDF of the latest published schedule.
+ * Retrieves the schedule, generates the PDF, and triggers a browser download.
+ */
 private Button createDownloadPdfButton() {
     Button downloadButton = new Button("Download Schedule PDF");
     downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -907,7 +954,6 @@ private Button createDownloadPdfButton() {
     
     downloadButton.addClickListener(e -> {
         try {
-            // Find the latest published schedule
             List<Schedule> allSchedules = scheduleService.getAllSchedules();
             java.util.Optional<Schedule> latestPublished = allSchedules.stream()
                 .filter(s -> s.getApproved() != null && s.getApproved())
@@ -923,12 +969,10 @@ private Button createDownloadPdfButton() {
             Schedule schedule = latestPublished.get();
             scheduleService.loadShiftsForSchedule(schedule);
             
-            // Generate PDF to temporary file
             String tempDir = System.getProperty("java.io.tmpdir");
             String pdfPath = tempDir + "/schedule-" + schedule.getId() + ".pdf";
             SchedulePdfGenerator.generateSchedulePdf(schedule, pdfPath);
             
-            // Trigger download
             java.io.File pdfFile = new java.io.File(pdfPath);
             com.vaadin.flow.server.StreamResource resource = 
                 new com.vaadin.flow.server.StreamResource("schedule.pdf", 
@@ -963,6 +1007,10 @@ private Button createDownloadPdfButton() {
     return downloadButton;
 }
 
+/**
+ * Creates a button that generates and downloads an hours report PDF for the latest published schedule.
+ * Shows total hours worked by each student across the schedule period.
+ */
 private Button createDownloadHoursReportButton() {
     Button downloadButton = new Button("Download Hours Report");
     downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -976,7 +1024,6 @@ private Button createDownloadHoursReportButton() {
     
     downloadButton.addClickListener(e -> {
         try {
-            // Find the latest published schedule
             List<Schedule> allSchedules = scheduleService.getAllSchedules();
             java.util.Optional<Schedule> latestPublished = allSchedules.stream()
                 .filter(s -> s.getApproved() != null && s.getApproved())
@@ -992,12 +1039,10 @@ private Button createDownloadHoursReportButton() {
             Schedule schedule = latestPublished.get();
             scheduleService.loadShiftsForSchedule(schedule);
             
-            // Generate Hours Report PDF to temporary file
             String tempDir = System.getProperty("java.io.tmpdir");
             String pdfPath = tempDir + "/hours-report-" + schedule.getId() + ".pdf";
             HoursReportPdfGenerator.generateHoursReportPdf(schedule, pdfPath);
             
-            // Trigger download
             java.io.File pdfFile = new java.io.File(pdfPath);
             com.vaadin.flow.server.StreamResource resource = 
                 new com.vaadin.flow.server.StreamResource("hours-report.pdf", 
@@ -1033,6 +1078,10 @@ private Button createDownloadHoursReportButton() {
 }
 
 
+/**
+ * Lifecycle method called before navigating to this view.
+ * Redirects to login if user is not authenticated.
+ */
     @Override
         public void beforeEnter(BeforeEnterEvent event) {
         if (!Auth.isLoggedIn()) {

@@ -29,7 +29,6 @@ import jakarta.annotation.security.RolesAllowed;
 @RolesAllowed("ADMIN")
 public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
 
-    // UI Components
     private VerticalLayout mainContainer = new VerticalLayout();
 
     private Button createScheduleButton = new Button("Create Schedule");
@@ -37,15 +36,24 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
     private DatePicker startDatePicker = new DatePicker("Start Date");
     private DatePicker endDatePicker = new DatePicker("End Date");
 
-    // Services
     private final ScheduleService scheduleService;
     private boolean dirty = false;
 
+    /**
+     * Constructs the new schedule view with date pickers and action buttons.
+     * Initializes the layout with drawer navigation, header, and schedule creation form.
+     */
     public NewScheduleView(ScheduleService scheduleService) {
         this.scheduleService = scheduleService;
         createElements();
     }
 
+    /**
+     * Validates user authentication before allowing access to the view.
+     * Checks for admin access and redirects to login if unauthorized.
+     * 
+     * @param event navigation event containing routing information
+     */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         if (!Auth.isLoggedIn() || !Auth.isAdmin()) {
@@ -55,61 +63,55 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
         }
     }
 
+    /**
+     * Creates and initializes all UI components for the new schedule view.
+     * Configures drawer navigation, header, date pickers, and action buttons with styling.
+     */
     private void createElements() {
         boolean admin = Auth.isAdmin();
         
-        // Create styled drawer menu
         VerticalLayout drawerLayout = new VerticalLayout();
         drawerLayout.setPadding(true);
         drawerLayout.setSpacing(true);
         
         if(admin){
-            // Routes that will be in the hamburger for navigation
             RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
             RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
             RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
             RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
-            // Apply styling to each link
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
             styleRouterLink(manageSchedulesLink);
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             styleRouterLink(mainMenuLink);
             
-            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, downloadPdfButton, changePasswordLink);
         }
         else{
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
             RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             styleRouterLink(mainMenuLink);
-            drawerLayout.add(mainMenuLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(mainMenuLink, downloadPdfButton, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
         
-        // Set drawer closed by default
         setDrawerOpened(false);
 
-        // Creates a hamburger for navigation to other tabs
         DrawerToggle toggle = new DrawerToggle();
         toggle.getStyle()
             .set("color", "#156fabff")
             .set("background-color", "#f5f5f5")
             .set("border-radius", "4px");
 
-        // Logout Button
         Button logoutButton = new Button("Logout");
         logoutButton.getStyle()
             .set("color", "#666666")
@@ -117,7 +119,6 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
             .set("margin-right", "20px");
         logoutButton.addClickListener(e -> Auth.logoutToLogin());
 
-        // Title for navbar
         H2 navTitle = new H2("Create New Schedule");
         navTitle.getStyle()
                .set("color", "#156fabff")
@@ -125,7 +126,6 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
                .set("margin", "0")
                .set("font-size", "24px");
 
-        // Navbar layout (this is the header)
         var header = new HorizontalLayout(toggle, navTitle, logoutButton);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
@@ -137,7 +137,6 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
             .set("padding", "16px 20px");
         addToNavbar(header);
 
-        // Create content layout
         VerticalLayout contentLayout = new VerticalLayout();
         contentLayout.setWidth("100%");
         contentLayout.getStyle().set("flex-grow", "1");
@@ -145,13 +144,11 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
 
 
 
-        // Main Container Setup
         mainContainer.setMaxWidth("33.33vw");
         mainContainer.setMinWidth("300px");
         mainContainer.setAlignItems(Alignment.STRETCH);
         mainContainer.setJustifyContentMode(JustifyContentMode.CENTER);
 
-        // Start Date Picker
         startDatePicker.setWidthFull();
         startDatePicker.setLabel("Start Date:");
         startDatePicker.setMin(LocalDate.now());
@@ -162,7 +159,6 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
             validateDates();
         });
 
-        // End Date Picker
         endDatePicker.setWidthFull();
         endDatePicker.setLabel("End Date:");
         endDatePicker.setMin(LocalDate.now());
@@ -173,17 +169,14 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
             validateDates();
         });
 
-        // Add date pickers to main container
         mainContainer.add(startDatePicker, endDatePicker);
 
-        // Buttons Layout
         HorizontalLayout buttonLayout = new HorizontalLayout();
         buttonLayout.setWidthFull();
         buttonLayout.setJustifyContentMode(JustifyContentMode.CENTER);
         buttonLayout.setSpacing(true);
         buttonLayout.getStyle().set("gap", "12px");
 
-        // Create Schedule Button
         createScheduleButton.setWidth("calc(50% - 6px)");
         createScheduleButton.getStyle()
             .set("background-color", "#156fabff")
@@ -192,7 +185,6 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
             .set("transition", "all 0.2s");
         createScheduleButton.addClickListener(e -> saveButtonClickListener());
 
-        // Cancel Button
         cancelButton.setWidth("calc(50% - 6px)");
         cancelButton.getStyle()
             .set("font-family", "Poppins, sans-serif")
@@ -205,10 +197,15 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
         contentLayout.add(mainContainer);
         contentLayout.setHorizontalComponentAlignment(Alignment.CENTER, mainContainer);
         
-        // Set content for AppLayout
         setContent(contentLayout);
     }
     
+    /**
+     * Applies consistent styling to navigation links in the drawer menu.
+     * Sets color, font, padding, and display properties for drawer navigation.
+     * 
+     * @param link RouterLink to be styled
+     */
     private void styleRouterLink(RouterLink link) {
         link.getStyle()
             .set("color", "#156fabff")
@@ -219,9 +216,13 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
             .set("font-size", "16px");
     }
 
+    /**
+     * Handles create schedule button click by validating dates and creating new schedule.
+     * Checks for existing unpublished schedules before creating, converts LocalDate to custom Date objects,
+     * and navigates to main menu on success.
+     */
     private void saveButtonClickListener() {
         if (validateFields()) {
-            // Check if an unpublished schedule already exists
             if (scheduleService.hasUnpublishedSchedule()) {
                 Notification.show("An unpublished schedule already exists. Please publish or delete it before creating a new one.",
                     4000, Notification.Position.MIDDLE);
@@ -229,7 +230,6 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
             }
 
             try {
-                // Convert LocalDate to custom Date objects
                 LocalDate startLocal = startDatePicker.getValue();
                 LocalDate endLocal = endDatePicker.getValue();
 
@@ -245,8 +245,7 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
                     endLocal.getYear()
                 );
 
-                // Create and save the schedule
-                Schedule schedule = scheduleService.createSchedule(startDate, endDate);
+                scheduleService.createSchedule(startDate, endDate);
                 
                 dirty = false;
                 Notification.show("Schedule created successfully!", 3000, Notification.Position.BOTTOM_START);
@@ -259,11 +258,20 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
         }
     }
 
+    /**
+     * Handles cancel button click by clearing dirty flag and navigating to main menu.
+     */
     private void cancelButtonClickListener() {
         dirty = false;
         UI.getCurrent().navigate(MainMenuView.class);
     }
 
+    /**
+     * Validates that both date fields have values selected.
+     * Shows notifications for missing fields.
+     * 
+     * @return true if all fields are valid, false otherwise
+     */
     private boolean validateFields() {
         if (startDatePicker.getValue() == null) {
             Notification.show("Please select a start date", 3000, Notification.Position.MIDDLE);
@@ -276,26 +284,37 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
         return validateDates();
     }
 
+    /**
+     * Validates that start date is before end date and updates end date picker minimum.
+     * Shows notification if dates are invalid.
+     * 
+     * @return true if dates are valid, false otherwise
+     */
     private boolean validateDates() {
         if (startDatePicker.getValue() == null || endDatePicker.getValue() == null) {
-            return true; // Skip validation if either date is not selected
+            return true;
         }
 
         LocalDate startLocal = startDatePicker.getValue();
         LocalDate endLocal = endDatePicker.getValue();
 
-        // Check if start date is before end date
         if (!startLocal.isBefore(endLocal)) {
             Notification.show("Start date must be before end date", 3000, Notification.Position.MIDDLE);
             return false;
         }
 
-        // Update end date picker minimum to be after start date
         endDatePicker.setMin(startLocal.plusDays(1));
 
         return true;
     }
     
+    /**
+     * Creates a button for downloading the latest published schedule as a PDF.
+     * Finds the most recent published schedule, generates a PDF file, and triggers browser download.
+     * Shows notifications for success or error conditions.
+     * 
+     * @return styled download button with click handler
+     */
     private Button createDownloadPdfButton() {
         Button downloadButton = new Button("Download PDF");
         downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -309,7 +328,6 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
         
         downloadButton.addClickListener(e -> {
             try {
-                // Find the latest published schedule
                 java.util.List<Schedule> allSchedules = scheduleService.getAllSchedules();
                 java.util.Optional<Schedule> latestPublished = allSchedules.stream()
                     .filter(s -> s.getApproved() != null && s.getApproved())
@@ -325,12 +343,10 @@ public class NewScheduleView extends AppLayout implements BeforeEnterObserver {
                 Schedule schedule = latestPublished.get();
                 scheduleService.loadShiftsForSchedule(schedule);
                 
-                // Generate PDF to temporary file
                 String tempDir = System.getProperty("java.io.tmpdir");
                 String pdfPath = tempDir + "/schedule-" + schedule.getId() + ".pdf";
                 SchedulePdfGenerator.generateSchedulePdf(schedule, pdfPath);
                 
-                // Trigger download
                 java.io.File pdfFile = new java.io.File(pdfPath);
                 com.vaadin.flow.server.StreamResource resource = 
                     new com.vaadin.flow.server.StreamResource("schedule.pdf", 

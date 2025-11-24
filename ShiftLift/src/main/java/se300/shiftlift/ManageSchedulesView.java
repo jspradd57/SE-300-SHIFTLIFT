@@ -39,69 +39,63 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
     private Button selectedItem = null;
     private Schedule selectedSchedule = null;
 
+    /**
+     * Constructs the schedule management view with publish and discard controls.
+     * Initializes the layout with drawer menu, header, and schedule list display.
+     */
     public ManageSchedulesView(ScheduleService scheduleService, ShiftService shiftService) {
         this.scheduleService = scheduleService;
         this.shiftService = shiftService;
         
         boolean admin = Auth.isAdmin();
         
-        // Create styled drawer menu
         VerticalLayout drawerLayout = new VerticalLayout();
         drawerLayout.setPadding(true);
         drawerLayout.setSpacing(true);
         
         if(admin){
-            // Routes that will be in the hamburger for navigation
             RouterLink viewPendingScheduleLink = new RouterLink("View Pending Schedule", MainMenuView.class);
             RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
             RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
             RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
-            // Apply styling to each link
             styleRouterLink(viewPendingScheduleLink);
             styleRouterLink(viewPublishedScheduleLink);
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
             styleRouterLink(manageSchedulesLink);
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, downloadPdfButton, changePasswordLink);
         }
         else{
             RouterLink viewPendingScheduleLink = new RouterLink("View Pending Schedule", MainMenuView.class);
             RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
             styleRouterLink(viewPendingScheduleLink);
             styleRouterLink(viewPublishedScheduleLink);
-            styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, downloadPdfButton, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
         
-        // Set drawer closed by default
         setDrawerOpened(false);
 
-        // Creates a hamburger for navigation to other tabs
         DrawerToggle toggle = new DrawerToggle();
         toggle.getStyle()
             .set("color", "#156fabff")
             .set("background-color", "#f5f5f5")
             .set("border-radius", "4px");
 
-        // Logout button
         Button logoutBtn = new Button("Logout");
         logoutBtn.getStyle()
             .set("color", "#666666")
@@ -109,7 +103,6 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             .set("margin-right", "20px");
         logoutBtn.addClickListener(e -> Auth.logoutToLogin());
 
-        // Title for navbar
         H2 navTitle = new H2("Manage Schedules");
         navTitle.getStyle()
                .set("color", "#156fabff")
@@ -117,7 +110,6 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
                .set("margin", "0")
                .set("font-size", "24px");
 
-        // Navbar layout (this is the header)
         var header = new HorizontalLayout(toggle, navTitle, logoutBtn);
         header.setWidthFull();
         header.setDefaultVerticalComponentAlignment(FlexComponent.Alignment.CENTER);
@@ -129,37 +121,32 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             .set("padding", "16px 20px");
         addToNavbar(header);
 
-        // Create action buttons
         Button returnButton = new Button("Return");
 
-        // Style the publish button
         publishButton.getStyle()
             .set("background-color", "#156fabff")
             .set("color", "white")
             .set("font-family", "Poppins, sans-serif")
             .set("transition", "all 0.2s");
         publishButton.setEnabled(false);
-        publishButton.getStyle().set("opacity", "0.5"); // Initial greyed out state
+        publishButton.getStyle().set("opacity", "0.5");
 
         returnButton.getStyle()
             .set("font-family", "Poppins, sans-serif")
             .set("color", "#666666");
 
-        // Style the discard button
         discardButton.getStyle()
             .set("background-color", "#dc3545")
             .set("color", "white")
             .set("font-family", "Poppins, sans-serif")
             .set("transition", "all 0.2s");
         discardButton.setEnabled(false);
-        discardButton.getStyle().set("opacity", "0.5"); // Initial greyed out state
+        discardButton.getStyle().set("opacity", "0.5");
 
-        // Add button handlers
         publishButton.addClickListener(e -> publishSelectedSchedule());
         discardButton.addClickListener(e -> confirmDiscardSchedule());
         returnButton.addClickListener(e -> UI.getCurrent().navigate(MainMenuView.class));
 
-        // Add New Schedule button
         Button addScheduleButton = new Button("+");
         addScheduleButton.getStyle()
             .set("background-color", "#156fabff")
@@ -180,20 +167,17 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             .set("transition", "all 0.2s");
         addScheduleButton.addClickListener(e -> UI.getCurrent().navigate("new-schedule"));
 
-        // Add button layout - centered
         HorizontalLayout addButtonLayout = new HorizontalLayout(addScheduleButton);
         addButtonLayout.setWidthFull();
         addButtonLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         addButtonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
 
-        // Create action buttons layout
         HorizontalLayout actionLayout = new HorizontalLayout(publishButton, discardButton, returnButton);
         actionLayout.setWidthFull();
         actionLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         actionLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
         actionLayout.setSpacing(true);
 
-        // List layout - constrain to same width as action layout
         listLayout.setWidthFull();
         listLayout.setSpacing(true);
         listLayout.setPadding(false);
@@ -201,7 +185,6 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             .set("gap", "16px")
             .set("margin-top", "16px");
 
-        // Container to constrain list, add button, and actions to same width
         VerticalLayout container = new VerticalLayout(listLayout, addButtonLayout, actionLayout);
         container.setWidthFull();
         container.setMaxWidth("max-content");
@@ -209,17 +192,21 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
         container.setSpacing(true);
         container.setAlignItems(FlexComponent.Alignment.STRETCH);
 
-        // Create content layout
         VerticalLayout contentLayout = new VerticalLayout(container);
         contentLayout.setWidthFull();
         contentLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         contentLayout.setPadding(true);
         contentLayout.setSpacing(true);
 
-        // Set content for AppLayout
         setContent(contentLayout);
     }
     
+    /**
+     * Applies consistent styling to navigation links in the drawer menu.
+     * Sets color, font, padding, and display properties for drawer navigation.
+     * 
+     * @param link RouterLink to be styled
+     */
     private void styleRouterLink(RouterLink link) {
         link.getStyle()
             .set("color", "#156fabff")
@@ -230,6 +217,12 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             .set("font-size", "16px");
     }
 
+    /**
+     * Validates user authentication before allowing access to the view.
+     * Redirects to login page if user is not authenticated.
+     * 
+     * @param event navigation event containing routing information
+     */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         if (!Auth.isLoggedIn()) {
@@ -247,6 +240,10 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
         loadSchedules();
     }
 
+    /**
+     * Loads and displays all schedules from the database.
+     * Cleans up expired schedules before displaying the list.
+     */
     private void loadSchedules() {
         listLayout.removeAll();
         selectedItem = null;
@@ -254,7 +251,6 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
         publishButton.setEnabled(false);
         publishButton.getStyle().set("opacity", "0.5");
 
-        // Clean up expired schedules before loading
         cleanupExpiredSchedules();
 
         List<Schedule> schedules = scheduleService.getAllSchedules();
@@ -275,24 +271,25 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
         }
     }
 
+    /**
+     * Creates a button representing a schedule in the list.
+     * Displays schedule date range and publish status with appropriate colors.
+     */
     private Button createScheduleButton(Schedule schedule) {
         Button button = new Button();
         button.setWidth("100%");
 
-        // Create content layout for text
         VerticalLayout textLayout = new VerticalLayout();
         textLayout.setPadding(false);
         textLayout.setSpacing(false);
         textLayout.getStyle().set("gap", "8px");
 
-        // Schedule date range
         Span dateRange = new Span(formatScheduleDateRange(schedule));
         dateRange.getStyle()
             .set("font-family", "Poppins, sans-serif")
             .set("font-size", "18px")
             .set("font-weight", "600");
 
-        // Schedule status
         String statusText = schedule.getApproved() != null && schedule.getApproved() 
             ? "Published" : "Unpublished";
         Span status = new Span("Status: " + statusText);
@@ -302,16 +299,14 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
 
         textLayout.add(dateRange, status);
 
-        // Wrap in a div to properly display in button and center vertically
         Div wrapper = new Div(textLayout);
         wrapper.getStyle()
             .set("width", "100%")
             .set("padding", "20px 16px");
         button.getElement().appendChild(wrapper.getElement());
 
-        // Set background color based on publish status
         boolean isPublished = schedule.getApproved() != null && schedule.getApproved();
-        String backgroundColor = isPublished ? "#28a745" : "#156fabff"; // Green for published, blue for unpublished
+        String backgroundColor = isPublished ? "#28a745" : "#156fabff";
         
         button.getStyle()
             .set("background-color", backgroundColor)
@@ -326,17 +321,18 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             .set("display", "flex")
             .set("align-items", "center");
 
-        // Store schedule reference
         button.getElement().setProperty("_scheduleId", schedule.getId().toString());
 
-        // Add click handler
         button.addClickListener(e -> selectSchedule(button, schedule));
 
         return button;
     }
 
+    /**
+     * Handles schedule selection and deselection.
+     * Updates button states and enables/disables publish and discard buttons.
+     */
     private void selectSchedule(Button button, Schedule schedule) {
-        // Check if clicking the same item - deselect it
         if (selectedItem == button) {
             boolean isPublished = schedule.getApproved() != null && schedule.getApproved();
             String backgroundColor = isPublished ? "#28a745" : "#156fabff";
@@ -353,7 +349,6 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             return;
         }
         
-        // Deselect previous item
         if (selectedItem != null) {
             Schedule prevSchedule = scheduleService.getScheduleById(
                 Long.parseLong(selectedItem.getElement().getProperty("_scheduleId"))
@@ -368,26 +363,21 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             }
         }
 
-        // Select new item
         selectedItem = button;
         selectedSchedule = schedule;
 
-        // Highlight selected item
         boolean isPublished = schedule.getApproved() != null && schedule.getApproved();
         String backgroundColor = isPublished ? "#28a745" : "#156fabff";
         button.getStyle()
             .set("background-color", backgroundColor)
-            .set("border", "3px solid #ffc107"); // Yellow border for selection
+            .set("border", "3px solid #ffc107");
 
-        // Enable/disable buttons based on publish status
         if (!isPublished) {
-            // Unpublished schedule - enable publish button, disable discard button
             publishButton.setEnabled(true);
             publishButton.getStyle().set("opacity", "1");
             discardButton.setEnabled(false);
             discardButton.getStyle().set("opacity", "0.5");
         } else {
-            // Published schedule - disable publish button, enable discard button
             publishButton.setEnabled(false);
             publishButton.getStyle().set("opacity", "0.5");
             discardButton.setEnabled(true);
@@ -395,6 +385,10 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
         }
     }
 
+    /**
+     * Publishes the selected schedule after validation.
+     * Prevents publishing if another schedule is already published.
+     */
     private void publishSelectedSchedule() {
         if (selectedSchedule == null) {
             Notification.show("Please select a schedule to publish", 3000, Notification.Position.MIDDLE);
@@ -406,7 +400,6 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             return;
         }
 
-        // Check if a published schedule already exists
         if (scheduleService.hasPublishedSchedule()) {
             Notification.show("A published schedule already exists. Please discard it before publishing a new one.",
                 4000, Notification.Position.MIDDLE);
@@ -417,8 +410,7 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             selectedSchedule.setApproved(true);
             scheduleService.save(selectedSchedule);
             Notification.show("Schedule published successfully!", 3000, Notification.Position.BOTTOM_START);
-            loadSchedules(); // Reload to update colors
-            // Navigate to manage-schedules after save
+            loadSchedules();
             UI.getCurrent().navigate("manage-schedules");
         } catch (Exception e) {
             Notification.show("Error publishing schedule: " + e.getMessage(), 
@@ -426,6 +418,10 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
         }
     }
 
+    /**
+     * Shows confirmation dialog for discarding a published schedule.
+     * Warns user that the action cannot be undone.
+     */
     private void confirmDiscardSchedule() {
         if (selectedSchedule == null) {
             Notification.show("Please select a schedule to discard", 3000, Notification.Position.MIDDLE);
@@ -449,13 +445,16 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
         dialog.open();
     }
 
+    /**
+     * Discards the selected published schedule.
+     * Deletes all associated shifts and the schedule from the database.
+     */
     private void discardSelectedSchedule() {
         if (selectedSchedule == null) {
             return;
         }
 
         try {
-            // Use the service method that properly deletes shifts and the schedule
             int deletedShifts = scheduleService.deleteScheduleWithShifts(selectedSchedule, shiftService);
             
             String message = "Schedule discarded successfully!";
@@ -465,16 +464,18 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             
             Notification.show(message, 3000, Notification.Position.BOTTOM_START);
             
-            // Reload the schedules list
             loadSchedules();
             
         } catch (Exception e) {
             Notification.show("Error discarding schedule: " + e.getMessage(), 
                 4000, Notification.Position.MIDDLE);
-            e.printStackTrace();
         }
     }
 
+    /**
+     * Formats schedule date range for display.
+     * Returns MM/DD/YYYY - MM/DD/YYYY format.
+     */
     private String formatScheduleDateRange(Schedule schedule) {
         Date startDate = schedule.getStartDate();
         Date endDate = schedule.getEndDate();
@@ -488,39 +489,37 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             endDate.get_month(), endDate.get_day(), endDate.get_year());
     }
 
+    /**
+     * Automatically removes schedules that have passed their end date.
+     * Deletes all associated shifts and shows notification if cleanup was performed.
+     */
     private void cleanupExpiredSchedules() {
         try {
             List<Schedule> allSchedules = scheduleService.getAllSchedules();
             LocalDate today = LocalDate.now();
             List<Schedule> expiredSchedules = new ArrayList<>();
             
-            // Find expired schedules
             for (Schedule schedule : allSchedules) {
                 Date endDate = schedule.getEndDate();
                 if (endDate != null) {
-                    // Convert Date to LocalDate for comparison
                     LocalDate scheduleEndDate = LocalDate.of(
                         endDate.get_year(), 
                         endDate.get_month(), 
                         endDate.get_day()
                     );
                     
-                    // If the schedule end date has passed, mark it for deletion
                     if (scheduleEndDate.isBefore(today)) {
                         expiredSchedules.add(schedule);
                     }
                 }
             }
             
-            // Remove expired schedules and their shifts
             int totalShiftsDeleted = 0;
             for (Schedule expiredSchedule : expiredSchedules) {
-                // Use the service method that properly deletes shifts and the schedule
                 int deletedShifts = scheduleService.deleteScheduleWithShifts(expiredSchedule, shiftService);
                 totalShiftsDeleted += deletedShifts;
             }
             
-            // Show notification if any cleanup was performed
             if (!expiredSchedules.isEmpty()) {
                 String message = String.format("Automatically removed %d expired schedule(s) and %d associated shift(s)", 
                     expiredSchedules.size(), totalShiftsDeleted);
@@ -528,11 +527,17 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
             }
             
         } catch (Exception e) {
-            // Silent failure - don't interrupt the user experience
             System.err.println("Error during schedule cleanup: " + e.getMessage());
         }
     }
     
+    /**
+     * Creates a button for downloading the latest published schedule as a PDF.
+     * Finds the most recent published schedule, generates a PDF file, and triggers browser download.
+     * Shows notifications for success or error conditions.
+     * 
+     * @return styled download button with click handler
+     */
     private Button createDownloadPdfButton() {
         Button downloadButton = new Button("Download PDF");
         downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -546,7 +551,6 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
         
         downloadButton.addClickListener(e -> {
             try {
-                // Find the latest published schedule
                 List<Schedule> allSchedules = scheduleService.getAllSchedules();
                 java.util.Optional<Schedule> latestPublished = allSchedules.stream()
                     .filter(s -> s.getApproved() != null && s.getApproved())
@@ -562,12 +566,10 @@ public class ManageSchedulesView extends AppLayout implements BeforeEnterObserve
                 Schedule schedule = latestPublished.get();
                 scheduleService.loadShiftsForSchedule(schedule);
                 
-                // Generate PDF to temporary file
                 String tempDir = System.getProperty("java.io.tmpdir");
                 String pdfPath = tempDir + "/schedule-" + schedule.getId() + ".pdf";
                 SchedulePdfGenerator.generateSchedulePdf(schedule, pdfPath);
                 
-                // Trigger download
                 java.io.File pdfFile = new java.io.File(pdfPath);
                 com.vaadin.flow.server.StreamResource resource = 
                     new com.vaadin.flow.server.StreamResource("schedule.pdf", 
