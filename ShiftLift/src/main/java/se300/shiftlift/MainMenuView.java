@@ -82,6 +82,7 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
         
         if(admin){
             // Routes that will be in the hamburger for navigation
+            RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
             RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
             RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
@@ -95,25 +96,28 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             Button downloadHoursReportButton = createDownloadHoursReportButton();
             
             // Apply styling to each link
-            
+            styleRouterLink(viewPublishedScheduleLink);
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
             styleRouterLink(manageSchedulesLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftButton, downloadPdfButton, downloadHoursReportButton, changePasswordLink);
+            drawerLayout.add(viewPublishedScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftButton, downloadPdfButton, downloadHoursReportButton, changePasswordLink);
         }
         else{
+            RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
-            
+
             Button newShiftButton = new Button("Request New Shift");
             newShiftButton.addClickListener(e -> openNewShiftDialog(null));
             styleButton(newShiftButton);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
+            styleRouterLink(viewPublishedScheduleLink);
             styleRouterLink(changePasswordLink);
-            drawerLayout.add(newShiftButton, downloadPdfButton, changePasswordLink);
+            
+            drawerLayout.add(viewPublishedScheduleLink, newShiftButton, downloadPdfButton, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
@@ -246,7 +250,12 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     //day columns (5 days)
     for (int dayIndex = 0; dayIndex < 5; dayIndex++) {
         final int finalDayIndex = dayIndex; // Make final for lambda usage
-        final String originalBgColor = dayIndex % 2 == 0 ? "#fafafa" : "#ffffff";
+        
+        // Check if this day is within the schedule
+        boolean isDayInSchedule = isDayWithinSchedule(finalDayIndex);
+        
+        final String originalBgColor = isDayInSchedule ? 
+            (dayIndex % 2 == 0 ? "#fafafa" : "#ffffff") : "#e8e8e8";
         
         Div dayCol = new Div();
         dayCol.getStyle()
@@ -255,26 +264,32 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
               .set("border-left", "2px solid #d0d0d0")
               .set("border-right", dayIndex == 4 ? "2px solid #d0d0d0" : "")
               .set("background-color", originalBgColor)
-              .set("cursor", "pointer")
+              .set("cursor", isDayInSchedule ? "pointer" : "default")
               .set("transition", "background-color 0.2s ease")
-              .set("overflow", "hidden"); // clip bars inside each column
+              .set("overflow", "hidden") // clip bars inside each column
+              .set("opacity", isDayInSchedule ? "1" : "0.5");
         
-        // Add tooltip for user guidance
-        dayCol.getElement().setAttribute("title", "Click to create a new shift for this day");
+        // Add tooltip and interactions only for days in schedule
+        if (isDayInSchedule) {
+            dayCol.getElement().setAttribute("title", "Click to create a new shift for this day");
+            
+            // Add hover effect
+            dayCol.getElement().addEventListener("mouseenter", e -> {
+                dayCol.getStyle().set("background-color", "#e3f2fd");
+            });
+            dayCol.getElement().addEventListener("mouseleave", e -> {
+                dayCol.getStyle().set("background-color", originalBgColor);
+            });
+            
+            // Add single-click listener to open NewShift dialog with selected date
+            dayCol.getElement().addEventListener("click", e -> {
+                openNewShiftDialogForDay(finalDayIndex);
+            });
+        } else {
+            dayCol.getElement().setAttribute("title", "This day is outside the schedule period");
+        }
         
-        // Add hover effect
-        dayCol.getElement().addEventListener("mouseenter", e -> {
-            dayCol.getStyle().set("background-color", "#e3f2fd");
-        });
-        dayCol.getElement().addEventListener("mouseleave", e -> {
-            dayCol.getStyle().set("background-color", originalBgColor);
-        });
         dayCol.setHeightFull();           // same height as grid
-
-        // Add single-click listener to open NewShift dialog with selected date
-        dayCol.getElement().addEventListener("click", e -> {
-            openNewShiftDialogForDay(finalDayIndex);
-        });
 
         // Load real shifts for this day from unpublished schedule
         loadUnpublishedShiftsForDay(dayCol, finalDayIndex);
@@ -555,13 +570,8 @@ private String[] getScheduleWeekDates() {
         scheduleStart.get_day()
     );
     
-    // Find the first Monday of the schedule period (could be before the schedule start date)
-    java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-    
-    // If the Monday is too far before the schedule start, move to the next Monday
-    if (firstMonday.isBefore(localStart.minusDays(6))) {
-        firstMonday = firstMonday.plusWeeks(1);
-    }
+    // Find the first Monday on or after the schedule start date
+    java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.MONDAY));
     
     for (int i = 0; i < 5; i++) {
         java.time.LocalDate day = firstMonday.plusDays(i);
@@ -627,6 +637,50 @@ private void updateScheduleGrid() {
     }
 }
 
+private boolean isDayWithinSchedule(int dayIndex) {
+    if (currentSchedule == null) {
+        return false;
+    }
+    
+    try {
+        java.time.LocalDate targetDate;
+        
+        if (availableWeeks != null && !availableWeeks.isEmpty()) {
+            Week currentWeek = availableWeeks.get(currentWeekIndex);
+            Date startDate = currentWeek.getWeekStartDate();
+            java.time.LocalDate localStart = java.time.LocalDate.of(
+                startDate.get_year(), startDate.get_month(), startDate.get_day()
+            );
+            
+            java.time.LocalDate monday = localStart.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+            targetDate = monday.plusDays(dayIndex);
+        } else {
+            Date scheduleStart = currentSchedule.getStartDate();
+            java.time.LocalDate localStart = java.time.LocalDate.of(
+                scheduleStart.get_year(), 
+                scheduleStart.get_month(), 
+                scheduleStart.get_day()
+            );
+            
+            java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+            if (firstMonday.isBefore(localStart.minusDays(6))) {
+                firstMonday = firstMonday.plusWeeks(1);
+            }
+            targetDate = firstMonday.plusDays(dayIndex);
+        }
+        
+        Date targetDateObj = new Date(
+            targetDate.getDayOfMonth(),
+            targetDate.getMonthValue(),
+            targetDate.getYear()
+        );
+        
+        return dateIsWithinSchedule(targetDateObj, currentSchedule);
+    } catch (Exception e) {
+        return false;
+    }
+}
+
 private void loadUnpublishedShiftsForDay(Div dayCol, int dayIndex) {
     if (currentSchedule == null) {
         return;
@@ -654,10 +708,8 @@ private void loadUnpublishedShiftsForDay(Div dayCol, int dayIndex) {
                 scheduleStart.get_day()
             );
             
-            java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-            if (firstMonday.isBefore(localStart.minusDays(6))) {
-                firstMonday = firstMonday.plusWeeks(1);
-            }
+            // Find the first Monday on or after the schedule start date
+            java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.MONDAY));
             targetDate = firstMonday.plusDays(dayIndex);
         }
         
@@ -785,10 +837,8 @@ private void openNewShiftDialogForDay(int dayIndex) {
                 scheduleStart.get_day()
             );
             
-            java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-            if (firstMonday.isBefore(localStart.minusDays(6))) {
-                firstMonday = firstMonday.plusWeeks(1);
-            }
+            // Find the first Monday on or after the schedule start date
+            java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.MONDAY));
             targetDate = firstMonday.plusDays(dayIndex);
         } else {
             targetDate = java.time.LocalDate.now();
