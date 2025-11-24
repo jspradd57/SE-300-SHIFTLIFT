@@ -181,12 +181,12 @@ public class EditShiftDialogContent extends VerticalLayout {
     
     private void setDatePickerConstraints() {
         try {
-            var scheduleOpt = scheduleService.getLatestUnpublishedSchedule();
+            var scheduleOpt = scheduleService.getLatestPublishedSchedule();
             
             if (scheduleOpt.isEmpty()) {
                 shiftDatePicker.setMin(LocalDate.now().plusYears(100));
                 shiftDatePicker.setMax(LocalDate.now().plusYears(100));
-                shiftDatePicker.setHelperText("No unpublished schedule found. Please create a schedule first.");
+                shiftDatePicker.setHelperText("No published schedule found. Please create and publish a schedule first.");
                 return;
             }
             

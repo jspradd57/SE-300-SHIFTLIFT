@@ -61,36 +61,41 @@ public class ListWorkstationsView extends AppLayout implements BeforeEnterObserv
         
         if(admin){
             // Routes that will be in the hamburger for navigation
+            RouterLink viewPendingScheduleLink = new RouterLink("View Pending Schedule", MainMenuView.class);
+            RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink manageWorkersLink = new RouterLink("Manage Workers", ListUsersView.class);
             RouterLink manageWorkstationsLink = new RouterLink("Manage Workstations", ListWorkstationsView.class);
             RouterLink manageSchedulesLink = new RouterLink("Manage Schedules", ManageSchedulesView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
             RouterLink newShiftLink = new RouterLink("Create New Shift", NewShiftView.class);
-            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
             // Apply styling to each link
+            styleRouterLink(viewPendingScheduleLink);
+            styleRouterLink(viewPublishedScheduleLink);
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
             styleRouterLink(manageSchedulesLink);
             styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
-            styleRouterLink(mainMenuLink);
             
-            drawerLayout.add(mainMenuLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftLink, downloadPdfButton, changePasswordLink);
         }
         else{
+            RouterLink viewPendingScheduleLink = new RouterLink("View Pending Schedule", MainMenuView.class);
+            RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
             RouterLink changePasswordLink = new RouterLink("Change Password", ChangePasswordView.class);
             RouterLink newShiftLink = new RouterLink("Request New Shift", NewShiftView.class);
-            RouterLink mainMenuLink = new RouterLink("Main Menu", MainMenuView.class);
             
             Button downloadPdfButton = createDownloadPdfButton();
             
+            styleRouterLink(viewPendingScheduleLink);
+            styleRouterLink(viewPublishedScheduleLink);
             styleRouterLink(newShiftLink);
             styleRouterLink(changePasswordLink);
-            styleRouterLink(mainMenuLink);
-            drawerLayout.add(mainMenuLink, newShiftLink, downloadPdfButton, changePasswordLink);
+            
+            drawerLayout.add(viewPendingScheduleLink, viewPublishedScheduleLink, newShiftLink, downloadPdfButton, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
