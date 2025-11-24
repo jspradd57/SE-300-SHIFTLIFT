@@ -312,16 +312,16 @@
         <li><strong>Manage Workers</strong> - Add, edit, or delete student workers</li>
         <li><strong>Manage Workstations</strong> - Add, edit, or delete workstations</li>
         <li><strong>Manage Schedules</strong> - Create and publish schedules</li>
-        <li><strong>Create New Shift</strong> - Add shifts to the pending schedule</li>
+        <li><strong>Create New Shift</strong> - Add shifts to the unpublished schedule</li>
         <li><strong>Download Schedule PDF</strong> - Export current schedule as PDF</li>
-        <li><strong>Download Hours Report</strong> - Export worker hours report (from pending schedule)</li>
+        <li><strong>Download Hours Report</strong> - Export worker hours report (from unpublished schedule)</li>
         <li><strong>Change Password</strong> - Update your account password</li>
     </ul>
     
     <h4>For Student Workers:</h4>
     <ul>
         <li><strong>View Published Schedule</strong> - View the current published schedule</li>
-        <li><strong>Request New Shift</strong> - Request shifts (pending schedule only)</li>
+        <li><strong>Request New Shift</strong> - Request shifts using unpublished schedule dates (Main Menu only)</li>
         <li><strong>Download Schedule PDF</strong> - Export current schedule as PDF</li>
         <li><strong>Change Password</strong> - Update your account password</li>
     </ul>
@@ -414,13 +414,18 @@
     <h3 id="manage-shifts">3.4 Managing Shifts</h3>
     
     <div class="note">
-        <strong>Important:</strong> Shifts can be created on both the Pending Schedule (Main Menu) and the Published Schedule. However, only administrators can create or edit shifts on published schedules. Days outside the schedule date range are greyed out and disabled.
+        <strong>Important:</strong> Shifts can be created from both the Pending Schedule (Main Menu) and the Published Schedule views. The date constraints depend on which view you're using:
+        <ul>
+            <li><strong>Main Menu (Pending Schedule):</strong> Uses unpublished schedule dates - administrators create shifts for the upcoming schedule being prepared</li>
+            <li><strong>Published Schedule View:</strong> Uses published schedule dates - only administrators can create or edit shifts on the currently active schedule</li>
+        </ul>
+        Days outside the relevant schedule date range are greyed out and disabled.
     </div>
     
     <h4>Adding Shifts - Method 1: Calendar View</h4>
     <ol class="step-list">
-        <li>From the Pending or Published Schedule view, locate the day you want to add a shift</li>
-        <li>Verify the day is within the schedule period (not greyed out)</li>
+        <li>From the Main Menu (uses unpublished schedule dates) or Published Schedule view (uses published schedule dates), locate the day you want to add a shift</li>
+        <li>Verify the day is within the relevant schedule period (not greyed out)</li>
         <li>Click on the day column in the calendar</li>
         <li>A dialog will appear with the date pre-selected</li>
         <li>Select the <strong>Worker</strong> from the dropdown</li>
@@ -430,10 +435,10 @@
         <li>Click <strong>Add Shift</strong></li>
     </ol>
     
-    <h4>Adding Shifts - Method 2: Navigation Menu</h4>
+    <h4>Adding Shifts - Method 2: Navigation Menu (Main Menu Only)</h4>
     <ol class="step-list">
-        <li>Click <strong>Create New Shift</strong> in the navigation menu (administrators on published schedule)</li>
-        <li>Select the shift <strong>Date</strong> (must be within schedule period)</li>
+        <li>Click <strong>Create New Shift</strong> in the navigation menu (available on Main Menu - uses unpublished schedule dates)</li>
+        <li>Select the shift <strong>Date</strong> (must be within the unpublished schedule period)</li>
         <li>Select the <strong>Worker</strong>, <strong>Workstation</strong>, and <strong>Times</strong></li>
         <li>Click <strong>Add Shift</strong></li>
     </ol>
@@ -441,14 +446,14 @@
     <h4>Editing a Shift</h4>
     <ol class="step-list">
         <li>Click on a shift block in the calendar</li>
-        <li>On the Published Schedule, only administrators can edit shifts</li>
-        <li>On the Pending Schedule, you can edit your own shifts (or any shift if you're an admin)</li>
+        <li>On the <strong>Published Schedule view</strong>, only administrators can edit shifts (dates constrained to published schedule)</li>
+        <li>On the <strong>Main Menu (Pending Schedule)</strong>, administrators can edit any shift and student workers can request shifts for themselves (dates constrained to unpublished schedule)</li>
         <li>Modify the worker, workstation, or time fields</li>
         <li>Click <strong>Save</strong> to apply changes</li>
     </ol>
     
     <div class="warning">
-        <strong>Restriction:</strong> On the Published Schedule, non-admin users cannot create or edit any shifts. They can only view the schedule.
+        <strong>Restriction:</strong> On the Published Schedule view, non-admin users cannot create or edit any shifts. They can only view the schedule. Student workers can only create shifts from the Main Menu using the unpublished schedule dates.
     </div>
     
     <h4>Deleting a Shift</h4>
@@ -483,13 +488,13 @@
     <h3>Requesting Shifts</h3>
     <ol class="step-list">
         <li>Navigate to the <strong>Pending Schedule</strong> (Main Menu)</li>
-        <li>Click on a day within the schedule period (non-greyed days)</li>
+        <li>Click on a day within the unpublished schedule period (non-greyed days)</li>
         <li>A dialog will appear - select your desired workstation and time</li>
         <li>Click <strong>Add Shift</strong> to submit your request</li>
     </ol>
     
     <div class="note">
-        <strong>Note:</strong> Non-admin users can only create shifts for themselves and only on the Pending Schedule. You cannot create or edit shifts on the Published Schedule.
+        <strong>Note:</strong> Non-admin users can only create shifts for themselves and only from the Main Menu (Pending Schedule view) using the unpublished schedule dates. You cannot create or edit shifts on the Published Schedule view.
     </div>
     
     <h3>Understanding Greyed Out Days</h3>
