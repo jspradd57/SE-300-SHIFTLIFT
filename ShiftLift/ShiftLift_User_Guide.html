@@ -304,16 +304,36 @@
     </div>
     
     <h3>Main Navigation</h3>
-    <p>After logging in, you'll see the main calendar view. Use the hamburger menu (☰) on the left to access different features:</p>
+    <p>After logging in, you'll see the Pending Schedule (unpublished) calendar view. Use the hamburger menu (☰) on the left to access different features:</p>
     
+    <h4>For Administrators:</h4>
     <ul>
-        <li><strong>Manage Workers</strong> (Admin only)</li>
-        <li><strong>Manage Workstations</strong> (Admin only)</li>
-        <li><strong>Manage Schedules</strong> (Admin only)</li>
-        <li><strong>Create New Shift</strong> / Request New Shift</li>
-        <li><strong>Download Schedule PDF</strong> (Admin only)</li>
-        <li><strong>Change Password</strong></li>
+        <li><strong>View Published Schedule</strong> - View the current published schedule</li>
+        <li><strong>Manage Workers</strong> - Add, edit, or delete student workers</li>
+        <li><strong>Manage Workstations</strong> - Add, edit, or delete workstations</li>
+        <li><strong>Manage Schedules</strong> - Create and publish schedules</li>
+        <li><strong>Create New Shift</strong> - Add shifts to the pending schedule</li>
+        <li><strong>Download Schedule PDF</strong> - Export current schedule as PDF</li>
+        <li><strong>Download Hours Report</strong> - Export worker hours report (from pending schedule)</li>
+        <li><strong>Change Password</strong> - Update your account password</li>
     </ul>
+    
+    <h4>For Student Workers:</h4>
+    <ul>
+        <li><strong>View Published Schedule</strong> - View the current published schedule</li>
+        <li><strong>Request New Shift</strong> - Request shifts (pending schedule only)</li>
+        <li><strong>Download Schedule PDF</strong> - Export current schedule as PDF</li>
+        <li><strong>Change Password</strong> - Update your account password</li>
+    </ul>
+    
+    <h3>Understanding Pending vs. Published Schedules</h3>
+    <div class="feature-box">
+        <h4>Pending Schedule (Main Menu)</h4>
+        <p>This is the unpublished schedule where administrators create and modify shifts for future weeks. Changes made here are not visible to student workers until published.</p>
+        
+        <h4>Published Schedule</h4>
+        <p>This is the official, published schedule visible to all users. Once a schedule is published, it becomes read-only for student workers. Only administrators can edit or create shifts on published schedules.</p>
+    </div>
     
     <h2 id="admin-features">3. Administrator Features</h2>
     
@@ -393,11 +413,16 @@
     
     <h3 id="manage-shifts">3.4 Managing Shifts</h3>
     
+    <div class="note">
+        <strong>Important:</strong> Shifts can be created on both the Pending Schedule (Main Menu) and the Published Schedule. However, only administrators can create or edit shifts on published schedules. Days outside the schedule date range are greyed out and disabled.
+    </div>
+    
     <h4>Adding Shifts - Method 1: Calendar View</h4>
     <ol class="step-list">
-        <li>From the main menu, locate the day you want to add a shift</li>
+        <li>From the Pending or Published Schedule view, locate the day you want to add a shift</li>
+        <li>Verify the day is within the schedule period (not greyed out)</li>
         <li>Click on the day column in the calendar</li>
-        <li>The system will navigate to the shift creation page with the date pre-selected</li>
+        <li>A dialog will appear with the date pre-selected</li>
         <li>Select the <strong>Worker</strong> from the dropdown</li>
         <li>Select the <strong>Workstation</strong> from the dropdown</li>
         <li>Choose <strong>Start Time</strong> (8:00 AM - 5:00 PM)</li>
@@ -407,8 +432,8 @@
     
     <h4>Adding Shifts - Method 2: Navigation Menu</h4>
     <ol class="step-list">
-        <li>Click <strong>Create New Shift</strong> in the navigation menu</li>
-        <li>Select the shift <strong>Date</strong></li>
+        <li>Click <strong>Create New Shift</strong> in the navigation menu (administrators on published schedule)</li>
+        <li>Select the shift <strong>Date</strong> (must be within schedule period)</li>
         <li>Select the <strong>Worker</strong>, <strong>Workstation</strong>, and <strong>Times</strong></li>
         <li>Click <strong>Add Shift</strong></li>
     </ol>
@@ -416,9 +441,15 @@
     <h4>Editing a Shift</h4>
     <ol class="step-list">
         <li>Click on a shift block in the calendar</li>
+        <li>On the Published Schedule, only administrators can edit shifts</li>
+        <li>On the Pending Schedule, you can edit your own shifts (or any shift if you're an admin)</li>
         <li>Modify the worker, workstation, or time fields</li>
         <li>Click <strong>Save</strong> to apply changes</li>
     </ol>
+    
+    <div class="warning">
+        <strong>Restriction:</strong> On the Published Schedule, non-admin users cannot create or edit any shifts. They can only view the schedule.
+    </div>
     
     <h4>Deleting a Shift</h4>
     <ol class="step-list">
@@ -429,25 +460,45 @@
     
     <h2 id="student-features">4. Student Worker Features</h2>
     
-    <h3>Viewing Your Schedule</h3>
-    <p>The main calendar displays the current week's schedule. Your assigned shifts appear as colored blocks in the calendar.</p>
+    <h3>Viewing Schedules</h3>
     
+    <h4>Viewing the Pending Schedule</h4>
+    <p>After logging in, you'll see the Pending Schedule (Main Menu). This shows the schedule being prepared for future weeks:</p>
     <ul>
+        <li>Click <strong>View Pending Schedule</strong> from any view to return to this calendar</li>
         <li>Use the <strong>arrow buttons</strong> to navigate between weeks</li>
-        <li>Click on a shift to view details</li>
+        <li>Your assigned shifts appear as colored blocks</li>
         <li>The <strong>color legend</strong> at the bottom shows which color represents each workstation</li>
+    </ul>
+    
+    <h4>Viewing the Published Schedule</h4>
+    <p>To see the official, current schedule:</p>
+    <ul>
+        <li>Click <strong>View Published Schedule</strong> in the navigation menu</li>
+        <li>This shows the finalized schedule that is currently in effect</li>
+        <li>Days outside the schedule period appear greyed out</li>
+        <li>You can view but not edit shifts on this schedule</li>
     </ul>
     
     <h3>Requesting Shifts</h3>
     <ol class="step-list">
-        <li>Click <strong>Request New Shift</strong> in the navigation menu</li>
-        <li>Select your desired date, workstation, and time</li>
-        <li>Click <strong>Add Shift</strong></li>
+        <li>Navigate to the <strong>Pending Schedule</strong> (Main Menu)</li>
+        <li>Click on a day within the schedule period (non-greyed days)</li>
+        <li>A dialog will appear - select your desired workstation and time</li>
+        <li>Click <strong>Add Shift</strong> to submit your request</li>
     </ol>
     
     <div class="note">
-        <strong>Note:</strong> Non-admin users can only create shifts for themselves.
+        <strong>Note:</strong> Non-admin users can only create shifts for themselves and only on the Pending Schedule. You cannot create or edit shifts on the Published Schedule.
     </div>
+    
+    <h3>Understanding Greyed Out Days</h3>
+    <p>Days that appear greyed out with reduced opacity are outside the current schedule period:</p>
+    <ul>
+        <li>You cannot create shifts on these days</li>
+        <li>The tooltip will indicate "This day is outside the schedule period"</li>
+        <li>These typically occur when viewing weeks that extend beyond the schedule dates</li>
+    </ul>
     
     <h3>Understanding Your Seniority</h3>
     <p>Your seniority is automatically calculated based on your hire date:</p>
