@@ -262,6 +262,8 @@
                     <li><a href="#manage-workstations">3.2 Managing Workstations</a></li>
                     <li><a href="#manage-schedules">3.3 Managing Schedules</a></li>
                     <li><a href="#manage-shifts">3.4 Managing Shifts</a></li>
+                    <li><a href="#download-schedule-pdf">3.5 Downloading Schedule PDF</a></li>
+                    <li><a href="#download-hours-report">3.6 Downloading Hours Report</a></li>
                 </ul>
             </li>
             <li><a href="#student-features">4. Student Worker Features</a></li>
@@ -278,7 +280,7 @@
     <div class="feature-box">
         <h3>Key Features</h3>
         <ul>
-            <li><strong>Visual Calendar:</strong> Interactive weekly calendar with half-hour time slots</li>
+            <li><strong>Visual Calendar:</strong> Interactive weekly calendar.</li>
             <li><strong>Automatic Conflict Detection:</strong> Prevents double-booking of workers and workstations</li>
             <li><strong>Seniority System:</strong> Automatic seniority calculation based on hire date</li>
             <li><strong>Max Hours Protection:</strong> Prevents students from exceeding weekly hour limits</li>
@@ -329,7 +331,7 @@
     <h3>Understanding Pending vs. Published Schedules</h3>
     <div class="feature-box">
         <h4>Pending Schedule (Main Menu)</h4>
-        <p>This is the unpublished schedule where administrators create and modify shifts for future weeks. Changes made here are not visible to student workers until published.</p>
+        <p>This is the unpublished schedule where all users create and modify shifts for future weeks.</p>
         
         <h4>Published Schedule</h4>
         <p>This is the official, published schedule visible to all users. Once a schedule is published, it becomes read-only for student workers. Only administrators can edit or create shifts on published schedules.</p>
@@ -348,7 +350,6 @@
                 <li><strong>Username:</strong> Unique identifier for the worker</li>
                 <li><strong>Email:</strong> Worker's email address</li>
                 <li><strong>Password:</strong> Initial password (user can change later)</li>
-                <li><strong>Hire Date:</strong> Affects seniority calculation</li>
                 <li><strong>Max Hours:</strong> Maximum weekly hours (default: 20)</li>
                 <li><strong>Worker Type:</strong> Student Worker or Manager</li>
             </ul>
@@ -392,8 +393,8 @@
     <ol class="step-list">
         <li>Navigate to <strong>Manage Schedules</strong></li>
         <li>Click <strong>Create New Schedule</strong></li>
-        <li>Select the <strong>Start Date</strong> (must be a Monday)</li>
-        <li>Select the <strong>End Date</strong> (must be a Friday)</li>
+        <li>Select the <strong>Start Date</strong></li>
+        <li>Select the <strong>End Date</strong></li>
         <li>Click <strong>Save</strong></li>
     </ol>
     
@@ -409,7 +410,7 @@
         <li>Click <strong>Publish</strong></li>
     </ol>
     
-    <p>Once published, the schedule becomes visible to all student workers.</p>
+    <p>Once published, the schedule becomes visible to all student workers uder the <strong>View Published Schedule</strong> menu option. Only <strong>Manager Users</strong> will be able to modify the published schedule.</p>
     
     <h3 id="manage-shifts">3.4 Managing Shifts</h3>
     
@@ -430,8 +431,8 @@
         <li>A dialog will appear with the date pre-selected</li>
         <li>Select the <strong>Worker</strong> from the dropdown</li>
         <li>Select the <strong>Workstation</strong> from the dropdown</li>
-        <li>Choose <strong>Start Time</strong> (8:00 AM - 5:00 PM)</li>
-        <li>Choose <strong>End Time</strong> (must be after start time)</li>
+        <li>Choose <strong>Start Time</strong></li>
+        <li>Choose <strong>End Time</strong></li>
         <li>Click <strong>Add Shift</strong></li>
     </ol>
     
@@ -463,6 +464,67 @@
         <li>Confirm the deletion in the dialog box</li>
     </ol>
     
+    <h3 id="download-schedule-pdf">3.5 Downloading Schedule PDF</h3>
+    
+    <p>The Download Schedule PDF feature allows you to export the latest published schedule as a PDF file for printing, sharing, or archiving.</p>
+    
+    <h4>Exporting the Schedule</h4>
+    <ol class="step-list">
+        <li>Click <strong>Download Schedule PDF</strong> in the navigation menu</li>
+        <li>The system will generate a PDF of the latest published schedule</li>
+        <li>The PDF will automatically download to your default downloads folder</li>
+        <li>Open the PDF to view or print the schedule</li>
+    </ol>
+    
+    <div class="note">
+        <strong>Note:</strong> The PDF export includes:
+        <ul>
+            <li>Complete weekly calendar view with all shifts</li>
+            <li>Color-coded workstations for easy identification</li>
+            <li>Worker names and assigned times</li>
+            <li>Workstation legend</li>
+        </ul>
+    </div>
+    
+    <div class="tip">
+        <strong>Tip:</strong> Use the PDF export to share schedules with workers who don't have system access or to post printed copies in common areas.
+    </div>
+    
+    <h3 id="download-hours-report">3.6 Downloading Hours Report</h3>
+    
+    <p>The Download Hours Report feature generates a comprehensive report showing total hours scheduled for each worker based on the latest published schedule.</p>
+    
+    <h4>Generating the Hours Report</h4>
+    <ol class="step-list">
+        <li>Click <strong>Download Hours Report</strong> in the navigation menu</li>
+        <li>The system will generate a report based on the latest published schedule</li>
+        <li>The report will automatically download to your default downloads folder</li>
+        <li>Open the file to review worker hours</li>
+    </ol>
+    
+    <h4>Report Contents</h4>
+    <p>The hours report includes the following information:</p>
+    <ul>
+        <li><strong>Individual Worker Hours:</strong> Total hours scheduled for each worker during the work week (Friday through Thursday)</li>
+        <li><strong>Weekly Breakdown:</strong> Hours calculated for each work week within the schedule period</li>
+        <li><strong>Total Hours:</strong> Cumulative hours for all workers across the entire schedule</li>
+    </ul>
+    
+    <div class="feature-box">
+        <h4>Work Week Definition</h4>
+        <p>The hours report calculates weekly totals based on a work week that runs from <strong>Friday through Thursday</strong>. This ensures accurate weekly hour tracking even when schedules span multiple calendar weeks.</p>
+    </div>
+    
+    <div class="tip">
+        <strong>Tip:</strong> Use the hours report to:
+        <ul>
+            <li>Verify workers are not exceeding their maximum hours</li>
+            <li>Balance workload distribution across the team</li>
+            <li>Track labor hours for budgeting and payroll purposes</li>
+            <li>Identify scheduling gaps or coverage issues</li>
+        </ul>
+    </div>
+    
     <h2 id="student-features">4. Student Worker Features</h2>
     
     <h3>Viewing Schedules</h3>
@@ -474,6 +536,7 @@
         <li>Use the <strong>arrow buttons</strong> to navigate between weeks</li>
         <li>Your assigned shifts appear as colored blocks</li>
         <li>The <strong>color legend</strong> at the bottom shows which color represents each workstation</li>
+        <li>Each shift block displays the initials of the assigned worker</li>
     </ul>
     
     <h4>Viewing the Published Schedule</h4>
@@ -506,7 +569,7 @@
     </ul>
     
     <h3>Understanding Your Seniority</h3>
-    <p>Your seniority is automatically calculated based on your hire date:</p>
+    <p>Your seniority is automatically calculated based on your hire date (account creation):</p>
     <ul>
         <li><strong>Lower number = Higher seniority</strong></li>
         <li>Senior workers can override junior workers' shifts (when workstation alternatives exist)</li>
@@ -522,6 +585,38 @@
         <li>Click <strong>Change Password</strong></li>
     </ol>
     
+    <h3>Downloading Your Schedule</h3>
+    
+    <p>Student workers can download a PDF copy of the published schedule for personal reference, printing, or offline viewing.</p>
+    
+    <h4>Exporting the Schedule as PDF</h4>
+    <ol class="step-list">
+        <li>Click <strong>Download Schedule PDF</strong> in the navigation menu</li>
+        <li>The system will generate a PDF of the latest published schedule</li>
+        <li>The PDF will automatically download to your default downloads folder</li>
+        <li>Open the PDF to view, save, or print your schedule</li>
+    </ol>
+    
+    <div class="note">
+        <strong>Note:</strong> The PDF includes the complete weekly schedule with:
+        <ul>
+            <li>All shifts for all workers in the published schedule</li>
+            <li>Color-coded workstations matching the online calendar</li>
+            <li>Worker names and assigned shift times</li>
+            <li>Workstation legend for easy reference</li>
+        </ul>
+    </div>
+    
+    <div class="tip">
+        <strong>Tip:</strong> Download the schedule PDF to:
+        <ul>
+            <li>Keep a personal copy of your work schedule</li>
+            <li>Print and post your schedule at home or in your workspace</li>
+            <li>View your schedule offline without logging into the system</li>
+            <li>Share your availability with others</li>
+        </ul>
+    </div>
+    
     <h2 id="seniority-system">5. Seniority and Override System</h2>
     
     <h3>How Seniority Works</h3>
@@ -532,7 +627,7 @@
         </tr>
         <tr>
             <td><strong>Calculation</strong></td>
-            <td>Automatically calculated based on hire date</td>
+            <td>Automatically calculated based on hire date (account creation)</td>
         </tr>
         <tr>
             <td><strong>Ranking</strong></td>
@@ -646,7 +741,7 @@
             <td>Each email must be unique in the system</td>
         </tr>
         <tr>
-            <td><span class="checkmark">✓</span> Hire Date</td>
+            <td><span class="checkmark">✓</span> Account Creation</td>
             <td>Determines seniority ranking</td>
         </tr>
         <tr>
