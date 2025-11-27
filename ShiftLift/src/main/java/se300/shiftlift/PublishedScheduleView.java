@@ -38,12 +38,18 @@ public class PublishedScheduleView extends AppLayout implements BeforeEnterObser
     private final ScheduleService scheduleService;
     private final ShiftService shiftService;
     private final UserService userService;
+    private final BlockedDateService blockedDateService;
+    private final StudentBlockedDateService studentBlockedDateService;
     private Schedule currentSchedule;
     private int currentWeekIndex = 0;
     private List<Week> availableWeeks;
     private H3 weekLabel;
     private HorizontalLayout calendarHeader;
     private Component scheduleGrid;
+    
+    // Cache for shifts to avoid repeated database queries
+    private List<Shift> cachedScheduleShifts = new ArrayList<>();
+    private Long cachedScheduleId = null;
     
     private final WorkstationService workstationService;
     private int workstationCount = 5;
@@ -55,11 +61,14 @@ public class PublishedScheduleView extends AppLayout implements BeforeEnterObser
      * Sets up different menu options based on admin vs student user roles.
      */
     public PublishedScheduleView(ScheduleService scheduleService, ShiftService shiftService, 
-                       WorkstationService workstationService, UserService userService) {
+                       WorkstationService workstationService, UserService userService, 
+                       BlockedDateService blockedDateService, StudentBlockedDateService studentBlockedDateService) {
         this.scheduleService = scheduleService;
         this.shiftService = shiftService;
         this.workstationService = workstationService;
         this.userService = userService;
+        this.blockedDateService = blockedDateService;
+        this.studentBlockedDateService = studentBlockedDateService;
         boolean admin = Auth.isAdmin();
         
         try {
@@ -94,6 +103,7 @@ public class PublishedScheduleView extends AppLayout implements BeforeEnterObser
             
             Button downloadPdfButton = createDownloadPdfButton();
             Button downloadHoursReportButton = createDownloadHoursReportButton();
+            Button downloadAvailabilityReportButton = createDownloadAvailabilityReportButton();
             
             styleRouterLink(viewPendingScheduleLink);
             styleRouterLink(manageWorkersLink);
@@ -101,7 +111,7 @@ public class PublishedScheduleView extends AppLayout implements BeforeEnterObser
             styleRouterLink(manageSchedulesLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(viewPendingScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftButton, downloadPdfButton, downloadHoursReportButton, changePasswordLink);
+            drawerLayout.add(viewPendingScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftButton, downloadPdfButton, downloadHoursReportButton, downloadAvailabilityReportButton, changePasswordLink);
         }
         else{
             RouterLink viewPendingScheduleLink = new RouterLink("View Pending Schedule", MainMenuView.class);
@@ -460,13 +470,26 @@ private void loadCurrentSchedule() {
             currentSchedule.generateWeeks();
             availableWeeks = currentSchedule.getWeeks();
             currentWeekIndex = 0;
+            
+            // Cache shifts for this schedule to reduce database queries
+            if (cachedScheduleId == null || !cachedScheduleId.equals(currentSchedule.getId())) {
+                List<Shift> allShifts = shiftService.getAllShifts();
+                cachedScheduleShifts = allShifts.stream()
+                    .filter(shift -> dateIsWithinSchedule(shift.getDate(), currentSchedule))
+                    .toList();
+                cachedScheduleId = currentSchedule.getId();
+            }
         } else {
             availableWeeks = new ArrayList<>();
             currentSchedule = null;
+            cachedScheduleShifts = new ArrayList<>();
+            cachedScheduleId = null;
         }
     } catch (Exception e) {
         availableWeeks = new ArrayList<>();
         currentSchedule = null;
+        cachedScheduleShifts = new ArrayList<>();
+        cachedScheduleId = null;
     }
 }
 
@@ -626,6 +649,10 @@ private void updateCalendarHeader(String[] dates) {
  * Replaces the old grid with a freshly generated one to reflect any updates.
  */
 private void updateScheduleGrid() {
+    // Invalidate cache and reload schedule to get fresh data
+    cachedScheduleId = null;
+    loadCurrentSchedule();
+    
     VerticalLayout content = (VerticalLayout) getContent();
     if (content != null && scheduleGrid != null) {
         Component newGrid = createScheduleGrid();
@@ -736,15 +763,14 @@ private void loadUnpublishedShiftsForDay(Div dayCol, int dayIndex) {
  * Filters shifts by date equality and schedule boundary validation.
  */
 private List<Shift> getUnpublishedShiftsForDate(Date targetDate) {
-    if (currentSchedule == null) {
+    if (currentSchedule == null || cachedScheduleShifts == null) {
         return new ArrayList<>();
     }
     
-    List<Shift> allShifts = shiftService.getAllShifts();
-    return allShifts.stream()
+    // Use cached shifts instead of querying database
+    return cachedScheduleShifts.stream()
         .filter(shift -> shift.getDate() != null && 
                        shift.getDate().get_Date() == targetDate.get_Date())
-        .filter(shift -> dateIsWithinSchedule(shift.getDate(), currentSchedule))
         .toList();
 }
 
@@ -826,7 +852,7 @@ private void openNewShiftDialog(java.time.LocalDate selectedDate) {
     dialog.setMaxWidth("90vw");
     
     NewShiftDialogContent content = new NewShiftDialogContent(
-        userService, workstationService, shiftService, scheduleService, selectedDate, false,
+        userService, workstationService, shiftService, scheduleService, blockedDateService, studentBlockedDateService, selectedDate, false,
         () -> {
             dialog.close();
             updateScheduleGrid();
@@ -887,7 +913,7 @@ private void openEditShiftDialog(Long shiftId) {
     dialog.setMaxWidth("90vw");
     
     EditShiftDialogContent content = new EditShiftDialogContent(
-        userService, workstationService, shiftService, scheduleService, shiftId, false,
+        userService, workstationService, shiftService, scheduleService, blockedDateService, studentBlockedDateService, shiftId, false,
         () -> {
             dialog.close();
             updateScheduleGrid();
@@ -1062,6 +1088,76 @@ private Button createDownloadHoursReportButton() {
                 
         } catch (Exception ex) {
             Notification.show("Error generating hours report: " + ex.getMessage(), 
+                5000, Notification.Position.MIDDLE)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        }
+    });
+    
+    return downloadButton;
+}
+
+/**
+ * Creates a button that generates and downloads a worker availability report PDF for the published schedule.
+ * Shows the number of available workers per day across the entire schedule.
+ */
+private Button createDownloadAvailabilityReportButton() {
+    Button downloadButton = new Button("Download Availability Report");
+    downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    downloadButton.getStyle()
+        .set("color", "#156fabff")
+        .set("font-family", "Poppins, sans-serif")
+        .set("padding", "8px 0")
+        .set("font-size", "16px")
+        .set("text-align", "left")
+        .set("justify-content", "flex-start");
+    
+    downloadButton.addClickListener(e -> {
+        try {
+            List<Schedule> allSchedules = scheduleService.getAllSchedules();
+            java.util.Optional<Schedule> latestPublished = allSchedules.stream()
+                .filter(s -> s.getApproved() != null && s.getApproved())
+                .max(java.util.Comparator.comparing(Schedule::getId));
+            
+            if (latestPublished.isEmpty()) {
+                Notification.show("No published schedule available to download", 
+                    3000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                return;
+            }
+            
+            Schedule schedule = latestPublished.get();
+            
+            String tempDir = System.getProperty("java.io.tmpdir");
+            String pdfPath = tempDir + "/availability-report-" + schedule.getId() + ".pdf";
+            AvailabilityReportPdfGenerator.generateAvailabilityReportPdf(
+                schedule, userService, studentBlockedDateService, blockedDateService, pdfPath);
+            
+            java.io.File pdfFile = new java.io.File(pdfPath);
+            com.vaadin.flow.server.StreamResource resource = 
+                new com.vaadin.flow.server.StreamResource("availability-report.pdf", 
+                    () -> {
+                        try {
+                            return new java.io.FileInputStream(pdfFile);
+                        } catch (java.io.FileNotFoundException ex) {
+                            return null;
+                        }
+                    });
+            
+            com.vaadin.flow.component.html.Anchor downloadLink = 
+                new com.vaadin.flow.component.html.Anchor(resource, "");
+            downloadLink.getElement().setAttribute("download", true);
+            downloadLink.setId("availability-pdf-download-" + System.currentTimeMillis());
+            
+            getElement().appendChild(downloadLink.getElement());
+            com.vaadin.flow.component.UI.getCurrent().getPage().executeJs(
+                "document.getElementById($0).click()", downloadLink.getId().get()
+            );
+            
+            Notification.show("Availability report download started", 2000, Notification.Position.BOTTOM_START)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                
+        } catch (Exception ex) {
+            Notification.show("Error generating availability report: " + ex.getMessage(), 
                 5000, Notification.Position.MIDDLE)
                 .addThemeVariants(NotificationVariant.LUMO_ERROR);
         }

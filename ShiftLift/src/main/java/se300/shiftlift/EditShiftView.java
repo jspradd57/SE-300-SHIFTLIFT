@@ -55,16 +55,20 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
     private final WorkstationService workstationService;
     private final ShiftService shiftService;
     private final ScheduleService scheduleService;
+    private final BlockedDateService blockedDateService;
+    private final StudentBlockedDateService studentBlockedDateService;
     private boolean dirty = false;
 
 
 
 
-    public EditShiftView(UserService userService, WorkstationService workstationService, ShiftService shiftService, ScheduleService scheduleService) {
+    public EditShiftView(UserService userService, WorkstationService workstationService, ShiftService shiftService, ScheduleService scheduleService, BlockedDateService blockedDateService, StudentBlockedDateService studentBlockedDateService) {
         this.userService = userService;
         this.workstationService = workstationService;
         this.shiftService = shiftService;
         this.scheduleService = scheduleService;
+        this.blockedDateService = blockedDateService;
+        this.studentBlockedDateService = studentBlockedDateService;
         currentUser = Auth.getCurrentUser();//Get Current user from Vaadin Session
 
         createElements();
@@ -351,6 +355,26 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
                     shiftDatePicker.getValue().getDayOfMonth(), 
                     shiftDatePicker.getValue().getMonthValue(),
                     shiftDatePicker.getValue().getYear());
+                
+                // Check if the date is blocked by manager
+                if (blockedDateService.isDateBlocked(shiftDate)) {
+                    Notification.show("Cannot save shift: This date has been blocked by a manager.", 
+                        4000, Notification.Position.MIDDLE);
+                    return;
+                }
+                
+                // Check if the selected worker has blocked this date
+                User selectedWorker = workerComboBox.getValue();
+                if (selectedWorker instanceof StudentWorker) {
+                    StudentWorker studentWorker = (StudentWorker) selectedWorker;
+                    if (studentBlockedDateService.isDateBlocked(studentWorker, shiftDate)) {
+                        Notification.show(String.format("Cannot save shift: %s has marked themselves unavailable on this date.",
+                            studentWorker.getUsername()),
+                            4000, Notification.Position.MIDDLE);
+                        return;
+                    }
+                }
+                
                 Time shiftTime = new Time(
                     parseTimeFromString(startTimeComboBox.getValue()),
                     parseTimeFromString(endTimeComboBox.getValue())
@@ -358,14 +382,13 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
                 
                 // Check if worker is double booked
                 Long excludeShiftId = (currentShift != null) ? currentShift.getId() : null;
-                if (shiftService.workerDoubleBooked(workerComboBox.getValue(), shiftDate, shiftTime, excludeShiftId)) {
+                if (shiftService.workerDoubleBooked(selectedWorker, shiftDate, shiftTime, excludeShiftId)) {
                     Notification.show("Selected worker is already scheduled for another shift at this date and time.", 
                         4000, Notification.Position.MIDDLE);
                     return;
                 }
                 
                 // Check if the worker is a StudentWorker and if this shift would exceed max hours
-                User selectedWorker = workerComboBox.getValue();
                 if (selectedWorker instanceof StudentWorker) {
                     StudentWorker studentWorker = (StudentWorker) selectedWorker;
                     if (shiftService.wouldExceedMaxHours(studentWorker, shiftDate, shiftTime, excludeShiftId)) {

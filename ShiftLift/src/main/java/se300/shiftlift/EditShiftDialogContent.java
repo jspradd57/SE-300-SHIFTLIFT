@@ -35,6 +35,8 @@ public class EditShiftDialogContent extends VerticalLayout {
     private final WorkstationService workstationService;
     private final ShiftService shiftService;
     private final ScheduleService scheduleService;
+    private final BlockedDateService blockedDateService;
+    private final StudentBlockedDateService studentBlockedDateService;
     private final Runnable onSuccess;
     private final boolean useUnpublishedSchedule;
     
@@ -46,6 +48,8 @@ public class EditShiftDialogContent extends VerticalLayout {
      * @param workstationService the service for managing workstations
      * @param shiftService the service for managing shifts
      * @param scheduleService the service for managing schedules
+     * @param blockedDateService the service for managing blocked dates
+     * @param studentBlockedDateService the service for managing student blocked dates
      * @param shiftId the ID of the shift to edit
      * @param useUnpublishedSchedule if true, uses unpublished schedule dates; if false, uses published schedule dates
      * @param onSuccess callback to run when the shift is successfully saved or dialog is closed
@@ -55,6 +59,8 @@ public class EditShiftDialogContent extends VerticalLayout {
             WorkstationService workstationService,
             ShiftService shiftService,
             ScheduleService scheduleService,
+            BlockedDateService blockedDateService,
+            StudentBlockedDateService studentBlockedDateService,
             Long shiftId,
             boolean useUnpublishedSchedule,
             Runnable onSuccess) {
@@ -63,6 +69,8 @@ public class EditShiftDialogContent extends VerticalLayout {
         this.workstationService = workstationService;
         this.shiftService = shiftService;
         this.scheduleService = scheduleService;
+        this.blockedDateService = blockedDateService;
+        this.studentBlockedDateService = studentBlockedDateService;
         this.currentUser = Auth.getCurrentUser();
         this.useUnpublishedSchedule = useUnpublishedSchedule;
         this.onSuccess = onSuccess;
@@ -276,19 +284,38 @@ public class EditShiftDialogContent extends VerticalLayout {
                 shiftDatePicker.getValue().getDayOfMonth(),
                 shiftDatePicker.getValue().getMonthValue(),
                 shiftDatePicker.getValue().getYear());
+            
+            // Check if the date is blocked by manager
+            if (blockedDateService.isDateBlocked(shiftDate)) {
+                Notification.show("Cannot save shift: This date has been blocked by a manager.",
+                    4000, Notification.Position.MIDDLE);
+                return;
+            }
+            
+            // Check if the selected worker has blocked this date
+            User selectedWorker = workerComboBox.getValue();
+            if (selectedWorker instanceof StudentWorker) {
+                StudentWorker studentWorker = (StudentWorker) selectedWorker;
+                if (studentBlockedDateService.isDateBlocked(studentWorker, shiftDate)) {
+                    Notification.show(String.format("Cannot save shift: %s has marked themselves unavailable on this date.",
+                        studentWorker.getUsername()),
+                        4000, Notification.Position.MIDDLE);
+                    return;
+                }
+            }
+            
             Time shiftTime = new Time(
                 parseTimeFromString(startTimeComboBox.getValue()),
                 parseTimeFromString(endTimeComboBox.getValue())
             );
             
             Long excludeShiftId = (currentShift != null) ? currentShift.getId() : null;
-            if (shiftService.workerDoubleBooked(workerComboBox.getValue(), shiftDate, shiftTime, excludeShiftId)) {
+            if (shiftService.workerDoubleBooked(selectedWorker, shiftDate, shiftTime, excludeShiftId)) {
                 Notification.show("Selected worker is already scheduled for another shift at this date and time.",
                     4000, Notification.Position.MIDDLE);
                 return;
             }
             
-            User selectedWorker = workerComboBox.getValue();
             if (selectedWorker instanceof StudentWorker) {
                 StudentWorker studentWorker = (StudentWorker) selectedWorker;
                 if (shiftService.wouldExceedMaxHours(studentWorker, shiftDate, shiftTime, excludeShiftId)) {
