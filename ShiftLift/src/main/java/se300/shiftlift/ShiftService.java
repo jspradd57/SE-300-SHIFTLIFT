@@ -2,6 +2,10 @@ package se300.shiftlift;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +14,8 @@ public class ShiftService
 {
     private ShiftRepositry shiftRepositry;
     private final WorkstationRepository workstationRepository;
+    @Autowired
+    private JavaMailSenderImpl emailSender;
 
     /**
      * Constructs a ShiftService with required dependencies.
@@ -36,11 +42,41 @@ public class ShiftService
         try {
             Shift shift = new Shift(date, time, workstation, worker);
             shiftRepositry.saveAndFlush(shift);
+            String emailText = "Dear " + shift.getStudentWorker().getUsername()
+                + ",\n\nYour new shift is scheduled for " +
+                shift.getTime() + " on " + shift.getDate() + " at the following workstation:\n"
+                + shift.getWorkstation()
+                + "\n\nShiftLift"
+                + "\nThis is an automated email. Do not reply.";
+            sendEmail(shift, emailText, "ShiftLift: New Shift");
+            
         } catch (Exception e) {
             System.out.println("Error adding shift: " + e.getMessage());
         }
  
     }
+
+    /**
+     * Sends an email notification about a shift.
+     * 
+     * 
+     */
+    private void sendEmail(Shift shift, String text, String subject) {
+        //Email shift information to the worker
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom("shiftlift985@gmail.com");  //Email address to send from
+        msg.setTo(shift.getStudentWorker().getEmail()); //Email address to send to
+        msg.setSubject(subject); //Email subject
+        msg.setText(text);
+        //Try to send the email
+        try {
+            emailSender.send(msg);
+        }
+        catch (MailException ex) {
+            System.err.println(ex.getMessage());
+        }
+    }
+
 
     /**
      * Returns a list of all shifts in the database.
@@ -69,6 +105,13 @@ public class ShiftService
             shift.changeWorkstation(workstation);
             shift.changeTime(time);
             shiftRepositry.saveAndFlush(shift);
+            String emailText = "Dear " + shift.getStudentWorker().getUsername()
+                + ",\n\nYour updated shift is scheduled for " +
+                shift.getTime() + " on " + shift.getDate() + " at the following workstation:\n"
+                + shift.getWorkstation()
+                + "\n\nShiftLift"
+                + "\nThis is an automated email. Do not reply.";
+            sendEmail(shift, emailText, "ShiftLift: Shift Changed");
         } catch (Exception e) {
             System.out.println("Error updating shift: " + e.getMessage());
         }
@@ -87,6 +130,14 @@ public class ShiftService
             shiftRepositry.flush();
             shiftRepositry.delete(shift);
             shiftRepositry.flush();
+            String emailText = "Dear " + shift.getStudentWorker().getUsername()
+                + ",\n\nYour shift for " +
+                shift.getTime() + " on " + shift.getDate() + " at the following workstation:\n"
+                + shift.getWorkstation()
+                + "\nhas been cancelled.  Use our application to make a new shift."
+                + "\n\nShiftLift"
+                + "\nThis is an automated email. Do not reply.";
+            sendEmail(shift, emailText, "ShiftLift: Shift Cancelled");
         }
     }
 
