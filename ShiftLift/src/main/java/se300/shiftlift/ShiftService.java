@@ -45,7 +45,7 @@ public class ShiftService
             String emailText = "Dear " + shift.getStudentWorker().getUsername()
                 + ",\n\nYour new shift is scheduled for " +
                 shift.getTime() + " on " + shift.getDate() + " at the following workstation:\n"
-                + shift.getWorkstation()
+                + shift.getWorkstation().getName()
                 + "\n\nShiftLift"
                 + "\nThis is an automated email. Do not reply.";
             sendEmail(shift, emailText, "ShiftLift: New Shift");
@@ -100,7 +100,7 @@ public class ShiftService
             String emailText = "Dear " + shift.getStudentWorker().getUsername()
                 + ",\n\nYour updated shift is scheduled for " +
                 shift.getTime() + " on " + shift.getDate() + " at the following workstation:\n"
-                + shift.getWorkstation()
+                + shift.getWorkstation().getName()
                 + "\n\nShiftLift"
                 + "\nThis is an automated email. Do not reply.";
             sendEmail(shift, emailText, "ShiftLift: Shift Changed");
@@ -125,7 +125,7 @@ public class ShiftService
             String emailText = "Dear " + shift.getStudentWorker().getUsername()
                 + ",\n\nYour shift for " +
                 shift.getTime() + " on " + shift.getDate() + " at the following workstation:\n"
-                + shift.getWorkstation()
+                + shift.getWorkstation().getName()
                 + "\nhas been cancelled.  Use our application to make a new shift."
                 + "\n\nShiftLift"
                 + "\nThis is an automated email. Do not reply.";
@@ -458,3 +458,4 @@ public class ShiftService
         return totalHours > worker.getMax_hours();
     }
 }
+
