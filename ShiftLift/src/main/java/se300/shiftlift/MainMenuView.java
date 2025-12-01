@@ -38,12 +38,18 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     private final ScheduleService scheduleService;
     private final ShiftService shiftService;
     private final UserService userService;
+    private final BlockedDateService blockedDateService;
+    private final StudentBlockedDateService studentBlockedDateService;
     private Schedule currentSchedule;
     private int currentWeekIndex = 0;
     private List<Week> availableWeeks;
     private final H3 weekLabel;
     private final HorizontalLayout calendarHeader;
     private Component scheduleGrid;
+    
+    // Cache for shifts to avoid repeated database queries
+    private List<Shift> cachedScheduleShifts = new ArrayList<>();
+    private Long cachedScheduleId = null;
     
     private final WorkstationService workstationService;
     private int workstationCount = 5;
@@ -55,11 +61,14 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
      * and initializes the calendar grid interface.
      */
     public MainMenuView(ScheduleService scheduleService, ShiftService shiftService, 
-                       WorkstationService workstationService, UserService userService) {
+                       WorkstationService workstationService, UserService userService, 
+                       BlockedDateService blockedDateService, StudentBlockedDateService studentBlockedDateService) {
         this.scheduleService = scheduleService;
         this.shiftService = shiftService;
         this.workstationService = workstationService;
         this.userService = userService;
+        this.blockedDateService = blockedDateService;
+        this.studentBlockedDateService = studentBlockedDateService;
         boolean admin = Auth.isAdmin();
         
         try {
@@ -94,13 +103,17 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             
             Button downloadPdfButton = createDownloadPdfButton();
             Button downloadHoursReportButton = createDownloadHoursReportButton();
+            Button downloadAvailabilityReportButton = createDownloadAvailabilityReportButton();
             styleRouterLink(viewPublishedScheduleLink);
             styleRouterLink(manageWorkersLink);
             styleRouterLink(manageWorkstationsLink);
             styleRouterLink(manageSchedulesLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(viewPublishedScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftButton, downloadPdfButton, downloadHoursReportButton, changePasswordLink);
+            // Add date blocking section for managers
+            VerticalLayout dateBlockingSection = createDateBlockingSection();
+            
+            drawerLayout.add(viewPublishedScheduleLink, manageWorkersLink, manageWorkstationsLink, manageSchedulesLink, newShiftButton, downloadPdfButton, downloadHoursReportButton, downloadAvailabilityReportButton, dateBlockingSection, changePasswordLink);
         }
         else{
             RouterLink viewPublishedScheduleLink = new RouterLink("View Published Schedule", PublishedScheduleView.class);
@@ -112,10 +125,13 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
             
             Button downloadPdfButton = createDownloadPdfButton();
             
+            // Add student date blocking section
+            VerticalLayout studentDateBlockingSection = createStudentDateBlockingSection();
+            
             styleRouterLink(viewPublishedScheduleLink);
             styleRouterLink(changePasswordLink);
             
-            drawerLayout.add(viewPublishedScheduleLink, newShiftButton, downloadPdfButton, changePasswordLink);
+            drawerLayout.add(viewPublishedScheduleLink, newShiftButton, downloadPdfButton, studentDateBlockingSection, changePasswordLink);
         }
         
         addToDrawer(drawerLayout);
@@ -239,9 +255,16 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
         final int finalDayIndex = dayIndex;
         
         boolean isDayInSchedule = isDayWithinSchedule(finalDayIndex);
+        boolean isDayBlocked = isDayBlocked(finalDayIndex);
         
-        final String originalBgColor = isDayInSchedule ? 
-            (dayIndex % 2 == 0 ? "#fafafa" : "#ffffff") : "#e8e8e8";
+        final String originalBgColor;
+        if (isDayBlocked) {
+            originalBgColor = "#d3d3d3"; // Grey for blocked days
+        } else if (!isDayInSchedule) {
+            originalBgColor = "#e8e8e8"; // Light grey for days outside schedule
+        } else {
+            originalBgColor = (dayIndex % 2 == 0 ? "#fafafa" : "#ffffff"); // Normal colors
+        }
         
         Div dayCol = new Div();
         dayCol.getStyle()
@@ -250,24 +273,74 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
               .set("border-left", "2px solid #d0d0d0")
               .set("border-right", dayIndex == 4 ? "2px solid #d0d0d0" : "")
               .set("background-color", originalBgColor)
-              .set("cursor", isDayInSchedule ? "pointer" : "default")
+              .set("cursor", (isDayInSchedule && !isDayBlocked) ? "pointer" : "not-allowed")
               .set("transition", "background-color 0.2s ease")
               .set("overflow", "hidden")
-              .set("opacity", isDayInSchedule ? "1" : "0.5");
+              .set("opacity", (isDayInSchedule && !isDayBlocked) ? "1" : "0.6");
         
-        if (isDayInSchedule) {
-            dayCol.getElement().setAttribute("title", "Click to create a new shift for this day");
+        if (isDayBlocked) {
+            String tooltipText = Auth.isAdmin() ? 
+                "This day is blocked - Right-click to unblock" : 
+                "This day is blocked by a manager - no shifts can be added";
+            dayCol.getElement().setAttribute("title", tooltipText);
+            
+            // Add right-click context menu for managers to unblock
+            if (Auth.isAdmin()) {
+                dayCol.getElement().addEventListener("contextmenu", e -> {
+                    showDayContextMenu(finalDayIndex, true);
+                });
+            }
+        } else if (isDayInSchedule) {
+            // Check if current student has blocked this day
+            final boolean[] studentHasBlockedDay = {false};
+            if (!Auth.isAdmin()) {
+                User currentUser = Auth.getCurrentUser();
+                if (currentUser instanceof StudentWorker) {
+                    StudentWorker student = (StudentWorker) currentUser;
+                    Date cellDate = getDateForDayIndex(finalDayIndex);
+                    if (cellDate != null && studentBlockedDateService.isDateBlocked(student, cellDate)) {
+                        studentHasBlockedDay[0] = true;
+                        dayCol.getStyle()
+                            .set("background-color", "#ffe6cc")
+                            .set("border", "2px solid #ff9800")
+                            .set("box-shadow", "inset 0 0 6px rgba(255, 152, 0, 0.3)");
+                    }
+                }
+            }
+            
+            String tooltipText;
+            if (studentHasBlockedDay[0]) {
+                tooltipText = "You marked yourself unavailable on this day";
+            } else {
+                tooltipText = Auth.isAdmin() ? 
+                    "Click to create shift | Right-click for options" : 
+                    "Click to create a new shift for this day";
+            }
+            dayCol.getElement().setAttribute("title", tooltipText);
+            
+            final String hoverColor = studentHasBlockedDay[0] ? "#ffd4a3" : "#e3f2fd";
             
             dayCol.getElement().addEventListener("mouseenter", e -> {
-                dayCol.getStyle().set("background-color", "#e3f2fd");
+                dayCol.getStyle().set("background-color", hoverColor);
             });
             dayCol.getElement().addEventListener("mouseleave", e -> {
-                dayCol.getStyle().set("background-color", originalBgColor);
+                if (studentHasBlockedDay[0]) {
+                    dayCol.getStyle().set("background-color", "#ffe6cc");
+                } else {
+                    dayCol.getStyle().set("background-color", originalBgColor);
+                }
             });
             
             dayCol.getElement().addEventListener("click", e -> {
                 openNewShiftDialogForDay(finalDayIndex);
             });
+            
+            // Add right-click context menu for managers to block day
+            if (Auth.isAdmin()) {
+                dayCol.getElement().addEventListener("contextmenu", e -> {
+                    showDayContextMenu(finalDayIndex, false);
+                });
+            }
         } else {
             dayCol.getElement().setAttribute("title", "This day is outside the schedule period");
         }
@@ -467,13 +540,35 @@ private void loadCurrentSchedule() {
             currentSchedule.generateWeeks();
             availableWeeks = currentSchedule.getWeeks();
             currentWeekIndex = 0;
+            
+            // Load and cache all shifts for this schedule
+            if (cachedScheduleId == null || !cachedScheduleId.equals(currentSchedule.getId())) {
+                cachedScheduleShifts.clear();
+                List<Shift> allShifts = shiftService.getAllShifts();
+                int startDate = currentSchedule.getStartDate().get_Date();
+                int endDate = currentSchedule.getEndDate().get_Date();
+                
+                for (Shift shift : allShifts) {
+                    if (shift.getDate() != null) {
+                        int shiftDate = shift.getDate().get_Date();
+                        if (shiftDate >= startDate && shiftDate <= endDate) {
+                            cachedScheduleShifts.add(shift);
+                        }
+                    }
+                }
+                cachedScheduleId = currentSchedule.getId();
+            }
         } else {
             availableWeeks = new ArrayList<>();
             currentSchedule = null;
+            cachedScheduleShifts.clear();
+            cachedScheduleId = null;
         }
     } catch (Exception e) {
         availableWeeks = new ArrayList<>();
         currentSchedule = null;
+        cachedScheduleShifts.clear();
+        cachedScheduleId = null;
     }
 }
 
@@ -631,8 +726,13 @@ private void updateCalendarHeader(String[] dates) {
 /**
  * Recreates the schedule grid component and replaces it in the content layout.
  * Called when the displayed week changes or shifts are modified.
+ * Invalidates shift cache to reload fresh data.
  */
 private void updateScheduleGrid() {
+    // Invalidate cache to reload shifts
+    cachedScheduleId = null;
+    loadCurrentSchedule();
+    
     VerticalLayout content = (VerticalLayout) getContent();
     if (content != null && scheduleGrid != null) {
         Component newGrid = createScheduleGrid();
@@ -690,6 +790,51 @@ private boolean isDayWithinSchedule(int dayIndex) {
 }
 
 /**
+ * Determines if a day at the given index (0-4 for Mon-Fri) is blocked by a manager.
+ * Returns true if the date is in the blocked dates list.
+ */
+private boolean isDayBlocked(int dayIndex) {
+    if (currentSchedule == null) {
+        return false;
+    }
+    
+    try {
+        java.time.LocalDate targetDate;
+        
+        if (availableWeeks != null && !availableWeeks.isEmpty()) {
+            Week currentWeek = availableWeeks.get(currentWeekIndex);
+            Date startDate = currentWeek.getWeekStartDate();
+            java.time.LocalDate localStart = java.time.LocalDate.of(
+                startDate.get_year(), startDate.get_month(), startDate.get_day()
+            );
+            
+            java.time.LocalDate monday = localStart.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+            targetDate = monday.plusDays(dayIndex);
+        } else {
+            Date scheduleStart = currentSchedule.getStartDate();
+            java.time.LocalDate localStart = java.time.LocalDate.of(
+                scheduleStart.get_year(), 
+                scheduleStart.get_month(), 
+                scheduleStart.get_day()
+            );
+            
+            java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.MONDAY));
+            targetDate = firstMonday.plusDays(dayIndex);
+        }
+        
+        Date targetDateObj = new Date(
+            targetDate.getDayOfMonth(),
+            targetDate.getMonthValue(),
+            targetDate.getYear()
+        );
+        
+        return blockedDateService.isDateBlocked(targetDateObj);
+    } catch (Exception e) {
+        return false;
+    }
+}
+
+/**
  * Loads and displays shift blocks for a specific day column.
  * Retrieves unpublished shifts matching the target date and adds visual blocks to the column.
  */
@@ -740,19 +885,24 @@ private void loadUnpublishedShiftsForDay(Div dayCol, int dayIndex) {
 
 /**
  * Retrieves shifts matching a specific date within the current unpublished schedule.
- * Filters all shifts by date and schedule period.
+ * Uses cached shifts to avoid repeated database queries.
  */
 private List<Shift> getUnpublishedShiftsForDate(Date targetDate) {
-    if (currentSchedule == null) {
+    if (currentSchedule == null || targetDate == null) {
         return new ArrayList<>();
     }
     
-    List<Shift> allShifts = shiftService.getAllShifts();
-    return allShifts.stream()
-        .filter(shift -> shift.getDate() != null && 
-                       shift.getDate().get_Date() == targetDate.get_Date())
-        .filter(shift -> dateIsWithinSchedule(shift.getDate(), currentSchedule))
-        .toList();
+    int targetDateInt = targetDate.get_Date();
+    List<Shift> result = new ArrayList<>();
+    
+    // Use cached shifts instead of querying database
+    for (Shift shift : cachedScheduleShifts) {
+        if (shift.getDate() != null && shift.getDate().get_Date() == targetDateInt) {
+            result.add(shift);
+        }
+    }
+    
+    return result;
 }
 
 /**
@@ -833,7 +983,7 @@ private void openNewShiftDialog(java.time.LocalDate selectedDate) {
     dialog.setMaxWidth("90vw");
     
     NewShiftDialogContent content = new NewShiftDialogContent(
-        userService, workstationService, shiftService, scheduleService, selectedDate, true,
+        userService, workstationService, shiftService, scheduleService, blockedDateService, studentBlockedDateService, selectedDate, true,
         () -> {
             dialog.close();
             updateScheduleGrid();
@@ -894,7 +1044,7 @@ private void openEditShiftDialog(Long shiftId) {
     dialog.setMaxWidth("90vw");
     
     EditShiftDialogContent content = new EditShiftDialogContent(
-        userService, workstationService, shiftService, scheduleService, shiftId, true,
+        userService, workstationService, shiftService, scheduleService, blockedDateService, studentBlockedDateService, shiftId, true,
         () -> {
             dialog.close();
             updateScheduleGrid();
@@ -1077,6 +1227,559 @@ private Button createDownloadHoursReportButton() {
     return downloadButton;
 }
 
+/**
+ * Creates a button that generates and downloads a worker availability report PDF for the unpublished schedule.
+ * Shows the number of available workers per day across the entire schedule.
+ */
+private Button createDownloadAvailabilityReportButton() {
+    Button downloadButton = new Button("Download Availability Report");
+    downloadButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    downloadButton.getStyle()
+        .set("color", "#156fabff")
+        .set("font-family", "Poppins, sans-serif")
+        .set("padding", "8px 0")
+        .set("font-size", "16px")
+        .set("text-align", "left")
+        .set("justify-content", "flex-start");
+    
+    downloadButton.addClickListener(e -> {
+        try {
+            var scheduleOpt = scheduleService.getLatestUnpublishedSchedule();
+            
+            if (scheduleOpt.isEmpty()) {
+                Notification.show("No unpublished schedule available to download", 
+                    3000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                return;
+            }
+            
+            Schedule schedule = scheduleOpt.get();
+            
+            String tempDir = System.getProperty("java.io.tmpdir");
+            String pdfPath = tempDir + "/availability-report-" + schedule.getId() + ".pdf";
+            AvailabilityReportPdfGenerator.generateAvailabilityReportPdf(
+                schedule, userService, studentBlockedDateService, blockedDateService, pdfPath);
+            
+            java.io.File pdfFile = new java.io.File(pdfPath);
+            com.vaadin.flow.server.StreamResource resource = 
+                new com.vaadin.flow.server.StreamResource("availability-report.pdf", 
+                    () -> {
+                        try {
+                            return new java.io.FileInputStream(pdfFile);
+                        } catch (java.io.FileNotFoundException ex) {
+                            return null;
+                        }
+                    });
+            
+            com.vaadin.flow.component.html.Anchor downloadLink = 
+                new com.vaadin.flow.component.html.Anchor(resource, "");
+            downloadLink.getElement().setAttribute("download", true);
+            downloadLink.setId("availability-pdf-download-" + System.currentTimeMillis());
+            
+            getElement().appendChild(downloadLink.getElement());
+            com.vaadin.flow.component.UI.getCurrent().getPage().executeJs(
+                "document.getElementById($0).click()", downloadLink.getId().get()
+            );
+            
+            Notification.show("Availability report download started", 2000, Notification.Position.BOTTOM_START)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                
+        } catch (Exception ex) {
+            Notification.show("Error generating availability report: " + ex.getMessage(), 
+                5000, Notification.Position.MIDDLE)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+        }
+    });
+    
+    return downloadButton;
+}
+
+
+/**
+ * Shows a context menu for a specific day with options to block or unblock.
+ * 
+ * @param dayIndex the day index (0-4 for Mon-Fri)
+ * @param isCurrentlyBlocked whether the day is currently blocked
+ */
+private void showDayContextMenu(int dayIndex, boolean isCurrentlyBlocked) {
+    try {
+        Date targetDate = getDateForDayIndex(dayIndex);
+        if (targetDate == null) {
+            return;
+        }
+        
+        Dialog menuDialog = new Dialog();
+        menuDialog.setModal(true);
+        menuDialog.setWidth("300px");
+        
+        VerticalLayout layout = new VerticalLayout();
+        layout.setPadding(false);
+        layout.setSpacing(true);
+        
+        H4 title = new H4(targetDate.toString());
+        title.getStyle()
+            .set("margin", "0 0 12px 0")
+            .set("color", "#156fabff")
+            .set("font-family", "Poppins, sans-serif");
+        
+        Button actionButton;
+        if (isCurrentlyBlocked) {
+            actionButton = new Button("Unblock this day");
+            actionButton.getStyle()
+                .set("background-color", "#4CAF50")
+                .set("color", "white")
+                .set("width", "100%");
+            actionButton.addClickListener(event -> {
+                menuDialog.close();
+                unblockDateWithConfirmation(targetDate);
+            });
+        } else {
+            actionButton = new Button("Block this day");
+            actionButton.getStyle()
+                .set("background-color", "#9b0000ff")
+                .set("color", "white")
+                .set("width", "100%");
+            actionButton.addClickListener(event -> {
+                menuDialog.close();
+                blockDateWithConfirmation(targetDate, null);
+            });
+        }
+        
+        Button cancelButton = new Button("Cancel");
+        cancelButton.getStyle().set("width", "100%");
+        cancelButton.addClickListener(event -> menuDialog.close());
+        
+        layout.add(title, actionButton, cancelButton);
+        menuDialog.add(layout);
+        menuDialog.open();
+    } catch (Exception e) {
+        Notification.show("Error opening menu: " + e.getMessage(), 
+            3000, Notification.Position.MIDDLE);
+    }
+}
+
+/**
+ * Gets the Date object for a given day index in the current week.
+ * 
+ * @param dayIndex the day index (0-4 for Mon-Fri)
+ * @return the Date object, or null if unable to calculate
+ */
+private Date getDateForDayIndex(int dayIndex) {
+    if (currentSchedule == null) {
+        return null;
+    }
+    
+    try {
+        java.time.LocalDate targetDate;
+        
+        if (availableWeeks != null && !availableWeeks.isEmpty()) {
+            Week currentWeek = availableWeeks.get(currentWeekIndex);
+            Date startDate = currentWeek.getWeekStartDate();
+            java.time.LocalDate localStart = java.time.LocalDate.of(
+                startDate.get_year(), startDate.get_month(), startDate.get_day()
+            );
+            
+            java.time.LocalDate monday = localStart.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+            targetDate = monday.plusDays(dayIndex);
+        } else {
+            Date scheduleStart = currentSchedule.getStartDate();
+            java.time.LocalDate localStart = java.time.LocalDate.of(
+                scheduleStart.get_year(), 
+                scheduleStart.get_month(), 
+                scheduleStart.get_day()
+            );
+            
+            java.time.LocalDate firstMonday = localStart.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.MONDAY));
+            targetDate = firstMonday.plusDays(dayIndex);
+        }
+        
+        return new Date(
+            targetDate.getDayOfMonth(),
+            targetDate.getMonthValue(),
+            targetDate.getYear()
+        );
+    } catch (Exception e) {
+        return null;
+    }
+}
+
+/**
+ * Blocks a date after checking for existing shifts and showing confirmation if needed.
+ * 
+ * @param date the date to block
+ * @param onSuccess optional callback to run after successful blocking
+ */
+private void blockDateWithConfirmation(Date date, Runnable onSuccess) {
+    try {
+        // Check if there are any shifts on this date
+        List<Shift> shiftsOnDate = getUnpublishedShiftsForDate(date);
+        
+        if (!shiftsOnDate.isEmpty()) {
+            // Show confirmation dialog
+            com.vaadin.flow.component.confirmdialog.ConfirmDialog dialog = new com.vaadin.flow.component.confirmdialog.ConfirmDialog();
+            dialog.setHeader("Warning: Existing Shifts Found");
+            dialog.setText(String.format(
+                "There are %d shift(s) scheduled for %s. " +
+                "Blocking this day will permanently delete all shifts on this date. " +
+                "Do you want to proceed?",
+                shiftsOnDate.size(),
+                date.toString()
+            ));
+            
+            dialog.setCancelable(true);
+            dialog.setConfirmText("Block and Delete Shifts");
+            dialog.setCancelText("Cancel");
+            dialog.setConfirmButtonTheme("error primary");
+            
+            dialog.addConfirmListener(event -> {
+                // Delete all shifts on this date
+                for (Shift shift : shiftsOnDate) {
+                    shiftService.deleteShift(shift);
+                }
+                
+                // Block the date
+                blockedDateService.blockDate(date);
+                Notification.show(String.format(
+                    "Date blocked successfully! Deleted %d shift(s).",
+                    shiftsOnDate.size()
+                ), 3000, Notification.Position.BOTTOM_START);
+                
+                updateScheduleGrid();
+                if (onSuccess != null) {
+                    onSuccess.run();
+                }
+            });
+            
+            dialog.open();
+        } else {
+            // No shifts, just block the date
+            blockedDateService.blockDate(date);
+            Notification.show("Date blocked successfully! Users cannot add shifts on this day.", 
+                3000, Notification.Position.BOTTOM_START);
+            updateScheduleGrid();
+            if (onSuccess != null) {
+                onSuccess.run();
+            }
+        }
+    } catch (Exception ex) {
+        Notification.show("Error blocking date: " + ex.getMessage(), 
+            3000, Notification.Position.MIDDLE);
+    }
+}
+
+/**
+ * Unblocks a date with confirmation.
+ * 
+ * @param date the date to unblock
+ */
+private void unblockDateWithConfirmation(Date date) {
+    try {
+        blockedDateService.unblockDate(date);
+        Notification.show("Date unblocked successfully! Users can now add shifts on this day.", 
+            3000, Notification.Position.BOTTOM_START);
+        updateScheduleGrid();
+    } catch (Exception ex) {
+        Notification.show("Error unblocking date: " + ex.getMessage(), 
+            3000, Notification.Position.MIDDLE);
+    }
+}
+
+/**
+ * Creates a student date blocking section for the sidebar.
+ * Allows students to block dates when they're unavailable.
+ */
+private VerticalLayout createStudentDateBlockingSection() {
+    VerticalLayout section = new VerticalLayout();
+    section.setPadding(true);
+    section.setSpacing(true);
+    section.getStyle()
+        .set("border-top", "1px solid #e0e0e0")
+        .set("margin-top", "16px")
+        .set("padding-top", "16px");
+    
+    H4 sectionTitle = new H4("My Unavailable Days");
+    sectionTitle.getStyle()
+        .set("color", "#156fabff")
+        .set("font-family", "Poppins, sans-serif")
+        .set("margin", "0 0 8px 0")
+        .set("font-size", "16px");
+    
+    // Create a div to display currently blocked dates
+    Div blockedDatesDisplay = new Div();
+    blockedDatesDisplay.getStyle()
+        .set("margin-bottom", "12px")
+        .set("padding", "8px")
+        .set("background-color", "#fff3cd")
+        .set("border", "1px solid #ffc107")
+        .set("border-radius", "4px")
+        .set("font-family", "Poppins, sans-serif")
+        .set("font-size", "13px")
+        .set("max-height", "150px")
+        .set("overflow-y", "auto");
+    
+    // Function to update the blocked dates display
+    Runnable updateBlockedDatesDisplay = () -> {
+        User currentUser = Auth.getCurrentUser();
+        if (currentUser instanceof StudentWorker) {
+            List<StudentBlockedDate> blockedDates = studentBlockedDateService.getBlockedDatesForStudent((StudentWorker) currentUser);
+            
+            if (blockedDates.isEmpty()) {
+                blockedDatesDisplay.setText("No blocked dates");
+                blockedDatesDisplay.getStyle()
+                    .set("background-color", "#e8f5e9")
+                    .set("border-color", "#4CAF50")
+                    .set("color", "#2e7d32");
+            } else {
+                blockedDatesDisplay.getStyle()
+                    .set("background-color", "#fff3cd")
+                    .set("border-color", "#ffc107")
+                    .set("color", "#856404");
+                
+                // Sort dates chronologically
+                blockedDates.sort((a, b) -> Integer.compare(a.getDateValue(), b.getDateValue()));
+                
+                StringBuilder html = new StringBuilder();
+                html.append("<div style='font-weight: 600; margin-bottom: 6px;'>🚫 Blocked Dates:</div>");
+                html.append("<ul style='margin: 0; padding-left: 20px; list-style-type: circle;'>");
+                
+                for (StudentBlockedDate sbd : blockedDates) {
+                    Date date = sbd.toDate();
+                    html.append(String.format("<li>%s</li>", date.toString()));
+                }
+                
+                html.append("</ul>");
+                blockedDatesDisplay.getElement().setProperty("innerHTML", html.toString());
+            }
+        }
+    };
+    
+    // Initial load
+    updateBlockedDatesDisplay.run();
+    
+    com.vaadin.flow.component.datepicker.DatePicker blockDatePicker = 
+        new com.vaadin.flow.component.datepicker.DatePicker("Select Date");
+    blockDatePicker.setWidthFull();
+    blockDatePicker.getStyle()
+        .set("font-family", "Poppins, sans-serif")
+        .set("font-size", "14px");
+    
+    // Set constraints based on current schedule
+    try {
+        var scheduleOpt = scheduleService.getLatestUnpublishedSchedule();
+        if (scheduleOpt.isPresent()) {
+            Schedule schedule = scheduleOpt.get();
+            Date startDate = schedule.getStartDate();
+            Date endDate = schedule.getEndDate();
+            
+            if (startDate != null && endDate != null) {
+                java.time.LocalDate minDate = java.time.LocalDate.of(
+                    startDate.get_year(), startDate.get_month(), startDate.get_day());
+                java.time.LocalDate maxDate = java.time.LocalDate.of(
+                    endDate.get_year(), endDate.get_month(), endDate.get_day());
+                
+                blockDatePicker.setMin(minDate);
+                blockDatePicker.setMax(maxDate);
+            }
+        }
+    } catch (Exception e) {
+        // Use default constraints if schedule not found
+    }
+    
+    HorizontalLayout buttonLayout = new HorizontalLayout();
+    buttonLayout.setWidthFull();
+    buttonLayout.setSpacing(true);
+    
+    Button blockButton = new Button("Block");
+    blockButton.getStyle()
+        .set("background-color", "#FF9800")
+        .set("color", "white")
+        .set("font-family", "Poppins, sans-serif")
+        .set("font-size", "14px")
+        .set("flex", "1");
+    blockButton.addClickListener(e -> {
+        java.time.LocalDate selectedDate = blockDatePicker.getValue();
+        if (selectedDate != null) {
+            Date date = new Date(
+                selectedDate.getDayOfMonth(),
+                selectedDate.getMonthValue(),
+                selectedDate.getYear()
+            );
+            
+            User currentUser = Auth.getCurrentUser();
+            if (currentUser instanceof StudentWorker) {
+                try {
+                    studentBlockedDateService.blockDate((StudentWorker) currentUser, date);
+                    Notification.show("✓ Date blocked! You cannot be scheduled on this day.", 
+                        3000, Notification.Position.BOTTOM_START);
+                    updateScheduleGrid();
+                    updateBlockedDatesDisplay.run();
+                    blockDatePicker.clear();
+                } catch (Exception ex) {
+                    Notification.show("Error blocking date: " + ex.getMessage(), 
+                        3000, Notification.Position.MIDDLE);
+                }
+            }
+        } else {
+            Notification.show("Please select a date to block", 
+                2000, Notification.Position.MIDDLE);
+        }
+    });
+    
+    Button unblockButton = new Button("Unblock");
+    unblockButton.getStyle()
+        .set("background-color", "#4CAF50")
+        .set("color", "white")
+        .set("font-family", "Poppins, sans-serif")
+        .set("font-size", "14px")
+        .set("flex", "1");
+    unblockButton.addClickListener(e -> {
+        java.time.LocalDate selectedDate = blockDatePicker.getValue();
+        if (selectedDate != null) {
+            Date date = new Date(
+                selectedDate.getDayOfMonth(),
+                selectedDate.getMonthValue(),
+                selectedDate.getYear()
+            );
+            
+            User currentUser = Auth.getCurrentUser();
+            if (currentUser instanceof StudentWorker) {
+                try {
+                    studentBlockedDateService.unblockDate((StudentWorker) currentUser, date);
+                    Notification.show("✓ Date unblocked! You can now be scheduled on this day.", 
+                        3000, Notification.Position.BOTTOM_START);
+                    updateScheduleGrid();
+                    updateBlockedDatesDisplay.run();
+                    blockDatePicker.clear();
+                } catch (Exception ex) {
+                    Notification.show("Error unblocking date: " + ex.getMessage(), 
+                        3000, Notification.Position.MIDDLE);
+                }
+            }
+        } else {
+            Notification.show("Please select a date to unblock", 
+                2000, Notification.Position.MIDDLE);
+        }
+    });
+    
+    buttonLayout.add(blockButton, unblockButton);
+    
+    section.add(sectionTitle, blockedDatesDisplay, blockDatePicker, buttonLayout);
+    return section;
+}
+
+/**
+ * Creates a date blocking section for the sidebar.
+ * Only visible to managers to block/unblock specific days.
+ */
+private VerticalLayout createDateBlockingSection() {
+    VerticalLayout section = new VerticalLayout();
+    section.setPadding(true);
+    section.setSpacing(true);
+    section.getStyle()
+        .set("border-top", "1px solid #e0e0e0")
+        .set("margin-top", "16px")
+        .set("padding-top", "16px");
+    
+    H4 sectionTitle = new H4("Block Days");
+    sectionTitle.getStyle()
+        .set("color", "#156fabff")
+        .set("font-family", "Poppins, sans-serif")
+        .set("margin", "0 0 8px 0")
+        .set("font-size", "16px");
+    
+    com.vaadin.flow.component.datepicker.DatePicker blockDatePicker = 
+        new com.vaadin.flow.component.datepicker.DatePicker("Select Date to Block");
+    blockDatePicker.setWidthFull();
+    blockDatePicker.getStyle()
+        .set("font-family", "Poppins, sans-serif")
+        .set("font-size", "14px");
+    
+    // Set constraints based on current schedule
+    try {
+        var scheduleOpt = scheduleService.getLatestUnpublishedSchedule();
+        if (scheduleOpt.isPresent()) {
+            Schedule schedule = scheduleOpt.get();
+            Date startDate = schedule.getStartDate();
+            Date endDate = schedule.getEndDate();
+            
+            if (startDate != null && endDate != null) {
+                java.time.LocalDate minDate = java.time.LocalDate.of(
+                    startDate.get_year(), startDate.get_month(), startDate.get_day());
+                java.time.LocalDate maxDate = java.time.LocalDate.of(
+                    endDate.get_year(), endDate.get_month(), endDate.get_day());
+                
+                blockDatePicker.setMin(minDate);
+                blockDatePicker.setMax(maxDate);
+            }
+        }
+    } catch (Exception e) {
+        // Use default constraints if schedule not found
+    }
+    
+    HorizontalLayout buttonLayout = new HorizontalLayout();
+    buttonLayout.setWidthFull();
+    buttonLayout.setSpacing(true);
+    
+    Button blockButton = new Button("Block");
+    blockButton.getStyle()
+        .set("background-color", "#9b0000ff")
+        .set("color", "white")
+        .set("font-family", "Poppins, sans-serif")
+        .set("font-size", "14px")
+        .set("flex", "1");
+    blockButton.addClickListener(e -> {
+        java.time.LocalDate selectedDate = blockDatePicker.getValue();
+        if (selectedDate != null) {
+            Date date = new Date(
+                selectedDate.getDayOfMonth(),
+                selectedDate.getMonthValue(),
+                selectedDate.getYear()
+            );
+            
+            blockDateWithConfirmation(date, () -> blockDatePicker.clear());
+        } else {
+            Notification.show("Please select a date to block", 
+                2000, Notification.Position.MIDDLE);
+        }
+    });
+    
+    Button unblockButton = new Button("Unblock");
+    unblockButton.getStyle()
+        .set("background-color", "#4CAF50")
+        .set("color", "white")
+        .set("font-family", "Poppins, sans-serif")
+        .set("font-size", "14px")
+        .set("flex", "1");
+    unblockButton.addClickListener(e -> {
+        java.time.LocalDate selectedDate = blockDatePicker.getValue();
+        if (selectedDate != null) {
+            Date date = new Date(
+                selectedDate.getDayOfMonth(),
+                selectedDate.getMonthValue(),
+                selectedDate.getYear()
+            );
+            
+            try {
+                blockedDateService.unblockDate(date);
+                Notification.show("Date unblocked successfully! Users can now add shifts on this day.", 
+                    3000, Notification.Position.BOTTOM_START);
+                updateScheduleGrid(); // Refresh the grid to show the unblocked day
+                blockDatePicker.clear();
+            } catch (Exception ex) {
+                Notification.show("Error unblocking date: " + ex.getMessage(), 
+                    3000, Notification.Position.MIDDLE);
+            }
+        } else {
+            Notification.show("Please select a date to unblock", 
+                2000, Notification.Position.MIDDLE);
+        }
+    });
+    
+    buttonLayout.add(blockButton, unblockButton);
+    
+    section.add(sectionTitle, blockDatePicker, buttonLayout);
+    return section;
+}
 
 /**
  * Lifecycle method called before navigating to this view.

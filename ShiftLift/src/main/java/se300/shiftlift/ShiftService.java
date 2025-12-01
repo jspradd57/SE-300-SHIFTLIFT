@@ -49,11 +49,18 @@ public class ShiftService
                 + "\n\nShiftLift"
                 + "\nThis is an automated email. Do not reply.";
             sendEmail(shift, emailText, "ShiftLift: New Shift");
+            
         } catch (Exception e) {
             System.out.println("Error adding shift: " + e.getMessage());
         }
+ 
     }
 
+    /**
+     * Sends an email notification about a shift.
+     * 
+     * 
+     */
     private void sendEmail(Shift shift, String text, String subject) {
         //Email shift information to the worker
         SimpleMailMessage msg = new SimpleMailMessage();
@@ -69,6 +76,7 @@ public class ShiftService
             System.err.println(ex.getMessage());
         }
     }
+
 
     /**
      * Returns a list of all shifts in the database.
