@@ -269,7 +269,14 @@
             <li><a href="#student-features">4. Student Worker Features</a></li>
             <li><a href="#seniority-system">5. Seniority and Override System</a></li>
             <li><a href="#validation-rules">6. Validation Rules</a></li>
-            <li><a href="#troubleshooting">7. Troubleshooting</a></li>
+            <li><a href="#blocking-dates">7. Blocking Dates & Availability</a>
+                <ul style="padding-left: 20px;">
+                    <li><a href="#admin-blocking">7.1 Admin: Blocking a Day</a></li>
+                    <li><a href="#student-blocking">7.2 Student: Blocking Your Availability</a></li>
+                </ul>
+            </li>
+            <li><a href="#availability-report">8. Availability Report</a></li>
+            <li><a href="#troubleshooting">9. Troubleshooting</a></li>
         </ul>
     </div>
     
@@ -750,7 +757,66 @@
         </tr>
     </table>
     
-    <h2 id="troubleshooting">7. Troubleshooting</h2>
+    <h2 id="blocking-dates">7. Blocking Dates & Availability</h2>
+
+    <h3 id="admin-blocking">7.1 Admin: Blocking a Day</h3>
+
+    <p>Managers (administrator users) can block specific calendar days so that no shifts can be scheduled on those dates. Blocking a day can be done from the sidebar <strong>Block Days</strong> section while preparing the unpublished schedule or from the calendar context for the active schedule.</p>
+
+    <ol class="step-list">
+        <li>Open the <strong>Main Menu</strong> or the <strong>Published Schedule</strong> view.</li>
+        <li>In the sidebar, find the <strong>Block Days</strong> section and select a date with the date picker (constrained to the current schedule period).</li>
+        <li>Click <strong>Block</strong>. If there are existing shifts on that date, a confirmation dialog will warn you that blocking the date will delete those shifts.</li>
+        
+        <li>If you confirm, all shifts on that date will be deleted and the day will be blocked. A notification confirms the action.</li>
+        <li>To reopen the date for scheduling, select the date in the same section and click <strong>Unblock</strong>.</li>
+    </ol>
+
+    <div class="warning">
+        <strong>Warning:</strong> Blocking a day that already contains shifts will permanently delete those shifts when you confirm. Use the confirmation dialog carefully.
+    </div>
+
+    <h3 id="student-blocking">7.2 Student: Blocking Your Availability</h3>
+
+    <p>Student workers can block specific dates when they are unavailable to work. These blocked dates prevent the system from assigning or allowing the student to be scheduled on those days.</p>
+
+    <ol class="step-list">
+        <li>Open the <strong>Main Menu</strong> (Pending Schedule view).</li>
+        <li>Locate the <strong>Blocked Dates</strong> area in the sidebar which lists your currently blocked dates.</li>
+        <li>Use the <strong>Select Date</strong> date picker to choose a date within the unpublished schedule period.</li>
+        <li>Click <strong>Block</strong> to add the date to your personal unavailable dates. A success notification will appear.</li>
+        <li>To allow scheduling again on a previously blocked date, choose the date and click <strong>Unblock</strong>.</li>
+    </ol>
+
+    <div class="note">
+        <strong>Note:</strong> Student blocked dates are personal—blocking a date as a student prevents only your account from being scheduled on that day. Manager-level blocked dates (see Admin section) prevent everyone from being scheduled.
+    </div>
+
+    <h2 id="availability-report">8. Availability Report</h2>
+
+    <p>The <strong>Download Availability Report</strong> feature generates a PDF summarizing worker availability for the latest published schedule. It shows how many workers are available per day across the schedule and highlights potential coverage gaps.</p>
+
+    <h4>What the Report Contains</h4>
+    <ul>
+        <li><strong>Daily availability counts:</strong> Number of available workers for each date in the published schedule.</li>
+        <li><strong>Student blocked dates:</strong> Personal unavailable dates contributed by student workers.</li>
+        <li><strong>Manager blocked dates:</strong> Dates blocked for everyone (no scheduling allowed).</li>
+        <li><strong>Workforce summary:</strong> Quick overview of days with low coverage that may need additional staffing.</li>
+    </ul>
+
+    <h4>How to Download</h4>
+    <ol class="step-list">
+        <li>Open the <strong>Published Schedule</strong> view (use the navigation menu).</li>
+        <li>Click <strong>Download Availability Report</strong> in the left navigation or top actions.</li>
+        
+        <li>The system generates a PDF from the latest published schedule and starts the download automatically.</li>
+    </ol>
+
+    <div class="tip">
+        <strong>Tip:</strong> Run the availability report before publishing or finalizing a schedule to identify days that need more staff coverage.
+    </div>
+
+    <h2 id="troubleshooting">9. Troubleshooting</h2>
     
     <h3>Common Issues and Solutions</h3>
     
