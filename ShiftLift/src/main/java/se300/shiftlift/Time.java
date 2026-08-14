@@ -5,8 +5,8 @@ import jakarta.persistence.Embeddable;
 @Embeddable
 public class Time {
 
-    public static final int OPENING_TIME = 800;
-    public static final int CLOSING_TIME = 1700;
+    public static final int OPENING_TIME = 730;
+    public static final int CLOSING_TIME = 1730;
 
     private int start_time;
     private int end_time;
