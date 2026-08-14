@@ -589,12 +589,27 @@ public class EditShiftDialogContent extends VerticalLayout {
      */
     private List<String> generateTimeOptions() {
         List<String> timeOptions = new ArrayList<>();
-        int startHour = Time.OPENING_TIME / 100;
-        int endHour = Time.CLOSING_TIME / 100;
-        
+        // Generate times from 7:30 AM to 5:30 PM in 30-minute intervals
+        int startHour = Time.OPENING_TIME / 100; // Extract hour from OPENING_TIME (800 -> 8)
+        int startMinute = Time.OPENING_TIME % 100;
+        int endHour = Time.CLOSING_TIME / 100;   // Extract hour from CLOSING_TIME (1700 -> 17)
+        int endMinute = Time.CLOSING_TIME % 100;
+
+        //Edited heavily in in an update
         for (int hour = startHour; hour <= endHour; hour++) {
-            timeOptions.add(String.format("%02d:00", hour));
-            if (hour < endHour) {
+            if (hour == startHour) {
+                if (startMinute == 0) {
+                    timeOptions.add(String.format("%02d:00", hour));
+                }
+                timeOptions.add(String.format("%02d:30", hour));
+            }
+            else if (hour == endHour) {
+                if (endMinute == 30) {
+                    timeOptions.add(String.format("%02d:00", hour));
+                }
+            }
+            else {
+                timeOptions.add(String.format("%02d:00", hour));
                 timeOptions.add(String.format("%02d:30", hour));
             }
         }
@@ -611,22 +626,28 @@ public class EditShiftDialogContent extends VerticalLayout {
      */
     private List<String> generateTimeOptionsForWorkstation(int startTime, int endTime) {
         List<String> timeOptions = new ArrayList<>();
-        int currentTime = startTime;
-        
-        while (currentTime <= endTime) {
-            int hours = currentTime / 100;
-            int minutes = currentTime % 100;
-            timeOptions.add(String.format("%02d:%02d", hours, minutes));
-            
-            minutes += 30;
-            if (minutes >= 60) {
-                hours++;
-                minutes = 0;
+        // Generate times from 7:30 AM to 5:30 PM in 30-minute intervals
+        int startHour = startTime / 100; // Extract hour from OPENING_TIME (800 -> 8)
+        int startMinute = startTime % 100;
+        int endHour = endTime / 100;   // Extract hour from CLOSING_TIME (1700 -> 17)
+        int endMinute = endTime % 100;
+
+        //Edited heavily in in an update
+        for (int hour = startHour; hour <= endHour; hour++) {
+            if (hour == startHour) {
+                if (startMinute == 0) {
+                    timeOptions.add(String.format("%02d:00", hour));
+                }
+                timeOptions.add(String.format("%02d:30", hour));
             }
-            currentTime = hours * 100 + minutes;
-            
-            if (currentTime > endTime) {
-                break;
+            else if (hour == endHour) {
+                if (endMinute == 30) {
+                    timeOptions.add(String.format("%02d:00", hour));
+                }
+            }
+            else {
+                timeOptions.add(String.format("%02d:00", hour));
+                timeOptions.add(String.format("%02d:30", hour));
             }
         }
         
