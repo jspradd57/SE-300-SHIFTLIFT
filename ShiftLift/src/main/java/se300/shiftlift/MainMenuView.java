@@ -46,6 +46,8 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     private final H3 weekLabel;
     private final HorizontalLayout calendarHeader;
     private Component scheduleGrid;
+    private final LocalTime startTime = LocalTime.of(7, 30); //Opens at 7:30 AM
+    private final LocalTime endTime   = LocalTime.of(17, 30); // Closes at 5:30 PM
     
     // Cache for shifts to avoid repeated database queries
     private List<Shift> cachedScheduleShifts = new ArrayList<>();
@@ -233,8 +235,6 @@ public class MainMenuView extends AppLayout implements BeforeEnterObserver {
     timeColumn.setHeightFull();
     timeColumn.getStyle().set("border-right", "1px solid #e0e0e0");
 
-    LocalTime startTime = LocalTime.of(8, 0);
-    LocalTime endTime   = LocalTime.of(17, 0);
     int slotMinutes = 30;
     int pxPerSlot = 40;
 
@@ -438,7 +438,7 @@ private Component createColorKey() {
                            String workerInitials,
                            Shift shift) {
 
-    LocalTime gridStart = LocalTime.of(8, 0);
+    LocalTime gridStart = startTime;
     int slotMinutes = 30;
     int pxPerSlot   = 40;
     
