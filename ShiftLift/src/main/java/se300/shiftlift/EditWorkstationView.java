@@ -215,7 +215,7 @@ public class EditWorkstationView extends Composite<VerticalLayout> implements Be
             else if (hour == endHour) {
                 timeOptions.add(String.format("%02d:00", hour));
                 if (endMinute == 30) {
-                    timeOptions.add(String.format("%02d:00", hour));
+                    timeOptions.add(String.format("%02d:30", hour));
                 }
             }
             else {
