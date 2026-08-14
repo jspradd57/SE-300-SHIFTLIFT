@@ -197,7 +197,7 @@ public class EditWorkstationView extends Composite<VerticalLayout> implements Be
      * @return list of time strings in HH:MM format
      */
     private java.util.List<String> generateTimeOptions() {
-        java.util.List<String> timeOptions = new ArrayList<>();
+        java.util.List<String> timeOptions = new java.util.ArrayList<>();
         // Generate times from 7:30 AM to 5:30 PM in 30-minute intervals
         int startHour = Time.OPENING_TIME / 100; // Extract hour from OPENING_TIME (800 -> 8)
         int startMinute = Time.OPENING_TIME % 100;
