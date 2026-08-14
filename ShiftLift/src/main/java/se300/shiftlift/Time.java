@@ -66,7 +66,7 @@ public class Time {
         if(start_time_is_valid(start_time)) {
             this.start_time = start_time;
         } else {
-            throw new IllegalArgumentException("Start time outside operating hours (0800-1700)");
+            throw new IllegalArgumentException("Start time outside operating hours (0730-1730)");
         }
     }
 
@@ -80,7 +80,7 @@ public class Time {
         if(end_time_is_valid(end_time)) {
             this.end_time = end_time;
         } else {
-            throw new IllegalArgumentException("End time outside operating hours (0800-1700)");
+            throw new IllegalArgumentException("End time outside operating hours (0730-1730)");
         }
     }
 
