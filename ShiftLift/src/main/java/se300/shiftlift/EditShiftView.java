@@ -701,10 +701,10 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
 
         List<String> timeOptions = new ArrayList<>();
         // Generate times from 7:30 AM to 5:30 PM in 30-minute intervals
-        int startHour = Time.OPENING_TIME / 100; // Extract hour from OPENING_TIME (800 -> 8)
-        int startMinute = Time.OPENING_TIME % 100;
-        int endHour = Time.CLOSING_TIME / 100;   // Extract hour from CLOSING_TIME (1700 -> 17)
-        int endMinute = Time.CLOSING_TIME % 100;
+        int startHour = startTime / 100; // Extract hour from OPENING_TIME (800 -> 8)
+        int startMinute = startTime % 100;
+        int endHour = endTime / 100;   // Extract hour from CLOSING_TIME (1700 -> 17)
+        int endMinute = endTime % 100;
 
         //Edited heavily in in an update
         for (int hour = startHour; hour <= endHour; hour++) {
