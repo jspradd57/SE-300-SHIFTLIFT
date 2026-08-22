@@ -715,8 +715,9 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
                 timeOptions.add(String.format("%02d:30", hour));
             }
             else if (hour == endHour) {
+                timeOptions.add(String.format("%02d:00", hour));
                 if (endMinute == 30) {
-                    timeOptions.add(String.format("%02d:00", hour));
+                    timeOptions.add(String.format("%02d:30", hour));
                 }
             }
             else {
@@ -724,7 +725,6 @@ public class EditShiftView extends Composite<VerticalLayout> implements BeforeEn
                 timeOptions.add(String.format("%02d:30", hour));
             }
         }
-        
         return timeOptions;
     }
     
