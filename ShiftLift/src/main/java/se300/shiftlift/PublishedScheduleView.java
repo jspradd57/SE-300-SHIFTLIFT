@@ -225,8 +225,8 @@ public class PublishedScheduleView extends AppLayout implements BeforeEnterObser
     timeColumn.setHeightFull();
     timeColumn.getStyle().set("border-right", "1px solid #e0e0e0");
 
-    LocalTime startTime = LocalTime.of(8, 0);
-    LocalTime endTime   = LocalTime.of(17, 0);
+    LocalTime startTime = LocalTime.of(7, 30);
+    LocalTime endTime   = LocalTime.of(17, 30);
     int slotMinutes = 30;
     int pxPerSlot = 40;
 
@@ -369,7 +369,7 @@ private Component createColorKey() {
                            String workerInitials,
                            Shift shift) {
 
-    LocalTime gridStart = LocalTime.of(8, 0);
+    LocalTime gridStart = LocalTime.of(7, 30);
     int slotMinutes = 30;
     int pxPerSlot   = 40;
     
