@@ -604,8 +604,9 @@ public class EditShiftDialogContent extends VerticalLayout {
                 timeOptions.add(String.format("%02d:30", hour));
             }
             else if (hour == endHour) {
+                timeOptions.add(String.format("%02d:00", hour));
                 if (endMinute == 30) {
-                    timeOptions.add(String.format("%02d:00", hour));
+                    timeOptions.add(String.format("%02d:30", hour));
                 }
             }
             else {
@@ -641,6 +642,7 @@ public class EditShiftDialogContent extends VerticalLayout {
                 timeOptions.add(String.format("%02d:30", hour));
             }
             else if (hour == endHour) {
+                timeOptions.add(String.format("%02d:00", hour));
                 if (endMinute == 30) {
                     timeOptions.add(String.format("%02d:00", hour));
                 }
